@@ -176,11 +176,21 @@ Logs go to `logs/pawpal.log` and the agent's reasoning trace to `logs/agent_trac
 Real output of `python demo.py` (full file: [assets/sample_run.txt](assets/sample_run.txt)). The demo
 household is Rex (dog, 14 days of history) and Mia (cat, only 2 days of history).
 
+**What each input demonstrates** (all four come from the single `python demo.py` run below):
+
+| Requirement | Where it is shown |
+|---|---|
+| End-to-end system run | Inputs 1-4: briefing, plan, question answering and sync from one command |
+| AI feature behavior | **Agent + learning**: Input 1 and 2 ("learned routine: usually ~07:25 ...", overdue nudge, "still learning" for Mia). **RAG**: tips with `[source]` in Input 1, cited answers in Input 3 |
+| Reliability / guardrails | Input 3: off-topic question refused, emergency sent to a vet, empty input rejected. Input 4: companion capped by real care. Evaluation: next section |
+| Clear outputs | Each input prints its own result, why, and source |
+
 **Input 1: 07:10 morning briefing, realistic voice.** No preferred times were set on these tasks;
 every "learned routine" time below came from Rex's history. Mia has too little data, so the system
 says so instead of guessing.
 
 ```
+$ python demo.py
 === INPUT 1: 07:10 briefing, realistic companion ===
 Woof! Here's what your pets need today.
   07:10-07:15  Rex: Heartworm meds
@@ -278,11 +288,14 @@ walked. The companion is capped by the real pet's care and says why; logging a r
 Run `python evaluate.py` (output in [assets/eval_results.txt](assets/eval_results.txt)):
 
 ```
+$ python evaluate.py
+...(per-case PASS/FAIL table, saved in assets/eval_results.txt)...
 retrieval  16/18 passed
 routine    5/5 passed
 guardrail  9/9 passed
+actions    8/8 passed
 agent      20/20 passed
-TOTAL      50/52 passed (96%)
+TOTAL      58/60 passed (97%)
 ```
 
 | Check | Result |
