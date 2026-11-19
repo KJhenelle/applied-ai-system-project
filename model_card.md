@@ -48,6 +48,7 @@ diagnosis, dosing, or emergencies.
   excluded from learning.
 - **Privacy.** The care log reveals when a home is empty (walk times). It is stored locally in
   `data/care_log.json`, which is git-ignored. A hosted version would need authentication and encryption.
+- **Tampered browser input.** The interactive scene sends actions from JavaScript, so a user (or a script) can send anything. Every action is validated server-side (type and mode must be known strings) and ignored otherwise. A test caught one real crash here: a list-valued `type` raised `TypeError` in the validator before I added a type check.
 - **Prompt/input abuse.** Input is length-limited and no user text is executed or sent to an external
   service, so injection risk is low today; that would change if an LLM were added.
 

@@ -24,9 +24,11 @@ flowchart TD
     COMP["Companion persona<br/>realistic or robotic voice + chibi SVG art<br/>(mood, need bubble, reaction)"]
     OUT[/"Briefing: schedule + why + tips + nudges + alerts"/]
     VET(["Veterinarian / poison hotline<br/>(human in the loop)"])
+    STAGE["Interactive scene (st.components.v2)<br/>click bowl, ball, leash, cabinet; drag brush"]
+    ACT["actions.py validates browser input<br/>(untrusted), then records the event"]
     OWNERCHECK(["Owner reviews, logs care<br/>(human in the loop)"])
     TRACE[("logs/agent_trace.jsonl<br/>logs/pawpal.log")]
-    EVAL["evaluate.py + pytest<br/>52 eval cases, 72 unit tests"]
+    EVAL["evaluate.py + pytest<br/>60 eval cases, 90 unit tests"]
 
     OWNER --> OBS
     EVENTS --> LOG --> OBS
