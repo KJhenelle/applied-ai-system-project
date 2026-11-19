@@ -1,0 +1,8 @@
+__pycache__/
+.venv/
+.venv_new/
+.pytest_cache/
+.DS_Storelogs/*.log
+logs/*.jsonl
+data/care_log.json
+.env
