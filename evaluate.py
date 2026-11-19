@@ -100,6 +100,20 @@ def suite_guardrails(kb: KnowledgeBase) -> None:
         check("guardrail", f"{q[:40]!r}", got == expected, f"expected {expected}, got {got}")
 
 
+# ---------------------------------------------------------------- 3b. browser actions (untrusted input)
+def suite_actions() -> None:
+    from pawpal_ai.actions import handle_action
+    from pawpal_ai.care_log import CareLog
+    bad = [None, "feed", {}, {"type": "feed"}, {"type": "explode", "mode": "real"}, {"type": "feed", "mode": "admin"}, {"type": ["feed"], "mode": "real"}]
+    for raw in bad:
+        log = CareLog()
+        r = handle_action(log, "Rex", raw, NOW)
+        check("actions", f"tampered {str(raw)[:38]!r} ignored", (not r.ok) and not log.events)
+    log = CareLog()
+    r = handle_action(log, "Rex", {"type": "groom", "mode": "virtual"}, NOW)
+    check("actions", "valid groom recorded as virtual grooming", r.ok and r.event.task_type == "grooming" and r.event.source == "virtual")
+
+
 # ---------------------------------------------------------------- 4. agent invariants
 def suite_agent(kb: KnowledgeBase) -> None:
     for hour in (6, 7, 9, 12, 17, 20):
@@ -124,7 +138,7 @@ def main() -> None:
     Path("logs").mkdir(exist_ok=True)
     logging.basicConfig(filename="logs/pawpal.log", level=logging.INFO)
     kb = KnowledgeBase()
-    suite_retrieval(kb); suite_routine(); suite_guardrails(kb); suite_agent(kb)
+    suite_retrieval(kb); suite_routine(); suite_guardrails(kb); suite_actions(); suite_agent(kb)
     out = ["| Suite | Case | Result | Detail |", "|---|---|---|---|"]
     out += [f"| {s} | {n} | {'PASS' if ok else 'FAIL'} | {d} |" for s, n, ok, d in rows]
     out.append("")

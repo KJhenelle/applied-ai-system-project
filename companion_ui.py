@@ -12,8 +12,10 @@ from pawpal_ai.agent import CareAgent
 from pawpal_ai.care_log import REAL, VIRTUAL, VALID_TYPES, CareEvent, CareLog
 from pawpal_ai.companion import STYLES, Companion, compute_synced_state
 from pawpal_ai.demo_data import build_demo
-from pawpal_ai.pet_art import REACTIONS, render_html
+from pawpal_ai.actions import ACTION_TO_CARE, CARE_TO_NEED, handle_action
+from pawpal_ai.pet_art import render_html, stage_payload
 from pawpal_ai.retriever import KnowledgeBase
+from stage import pet_stage
 from ui_theme import banner
 
 LOG_PATH = Path("data/care_log.json")
@@ -38,8 +40,6 @@ def _ensure_log() -> CareLog:
     return st.session_state.care_log
 
 
-CARE_BUTTONS = [("feeding", "🍖 Feed"), ("walk", "🦮 Walk"), ("enrichment", "🧸 Play"),
-                ("grooming", "🛁 Groom"), ("meds", "💊 Meds")]
 TYPE_EMOJI = {"feeding": "🍖", "walk": "🦮", "meds": "💊", "enrichment": "🧸", "grooming": "🛁"}
 NEED_LABEL = {"belly": "🍖 Belly", "fun": "🎾 Fun", "clean": "🛁 Clean"}
 
@@ -103,6 +103,59 @@ def _load_demo() -> None:
     st.rerun()
 
 
+HELP_HTML = """<h4>How to play</h4><ol>
+<li>🍖 <b>Click the bowl</b> to feed.</li><li>🎾 <b>Click the ball</b> to play fetch.</li>
+<li>🦮 <b>Click the leash</b> to go for a walk.</li><li>🛁 <b>Drag the brush onto the pet</b> to groom.</li>
+<li>💊 <b>Click the medicine cabinet</b> for meds.</li></ol>
+<div class="sync" style="margin-top:.6rem"><b>🎮 Play</b> is just for fun. Switch to <b>🐕 Real care</b> (top right) only when you
+<i>really</i> did it for your pet: that is what teaches the routine and lets the companion feel better.</div>"""
+
+
+def _today_html(brief) -> str:
+    out = banner("hello", brief.greeting, "👋")
+    out += "".join(banner("warn", n, "⏰") for n in brief.nudges)
+    if brief.all_done:
+        out += banner("ok", brief.all_done, "🎉")
+    unfit = [a.removeprefix("Could not fit: ").rstrip(".") for a in brief.alerts if a.startswith("Could not fit: ")]
+    out += "".join(banner("err", a, "⚠️") for a in brief.alerts if not a.startswith("Could not fit: "))
+    if unfit:
+        out += banner("warn", "No free window left today for: " + "; ".join(unfit) + ".", "🗓️")
+    if brief.done:
+        out += banner("ok", "Done today: " + "  ·  ".join(brief.done), "✅")
+    if brief.lines:
+        out += f'<div class="section-sub" style="margin-top:.6rem">Planned ({len(brief.lines)})</div>' + "".join(_slot_card(l) for l in brief.lines)
+    out += "".join(banner("info", n, "🌱") for n in brief.learning)
+    return out
+
+
+def _sync_html(companion, synced, pet_name) -> str:
+    rows = "".join(f"<li><b>{NEED_LABEL[n]}</b>: real {getattr(synced.real, n)}% · game {getattr(synced.virtual, n)}% → shown <b>{getattr(synced.shown, n)}%</b></li>" for n in NEED_LABEL)
+    return (f"<h4>Synced to the real {escape(pet_name)}</h4>{_sync_banner(companion, synced)}"
+            f'<ul style="margin:.6rem 0 0 1.1rem;padding:0">{rows}</ul>'
+            '<div class="section-sub" style="margin-top:.5rem">Each need shown is the <b>lower</b> of the game level and the real pet level, so play can never cover for missed care.</div>')
+
+
+def _on_action() -> None:
+    """Runs on the rerun a click/drag triggers, before the page is drawn, so the new state is shown at once."""
+    res = st.session_state.get("pet_stage")
+    raw = res.get("action") if isinstance(res, dict) else getattr(res, "action", None)
+    if raw is None:
+        return
+    care_log, pet_name = _ensure_log(), st.session_state.get("companion_pet")
+    now = datetime.now()
+    result = handle_action(care_log, pet_name, raw, now)
+    st.session_state.pop("stage_toast", None)
+    if not result.ok:
+        return
+    care_log.save(LOG_PATH)
+    # If this was game play and real care is the bottleneck, say so: the pet will not cheer up.
+    need = CARE_TO_NEED.get(result.event.task_type)
+    synced = compute_synced_state(care_log, pet_name, now)
+    if result.event.source == VIRTUAL and need in synced.limited_by:
+        names = {"belly": "needs a real meal", "fun": "needs a real walk or playtime", "clean": "needs real grooming"}
+        st.session_state.stage_toast = (now.timestamp(), f"🔗 Nice game, but the real {pet_name} {names[need]}. Switch to Real care when you do it.")
+
+
 def render(owner, availability) -> None:
     care_log = _ensure_log()
     if not owner.pets:
@@ -122,44 +175,18 @@ def render(owner, availability) -> None:
     now = datetime.now()
     companion = Companion(pet.name, pet.species, style)
     synced = compute_synced_state(care_log, pet.name, now)
-    reaction = st.session_state.pop("reaction", None)  # one-shot, so it doesn't replay
-    left, right = st.columns([3, 2], gap="medium")
-    with left:
-        _show_html(render_html(pet.species, style, synced.shown, reaction, now.hour), 360)
-        st.markdown(_sync_banner(companion, synced), unsafe_allow_html=True)
-    with right:
-        st.markdown(_status_card(pet, companion, synced), unsafe_allow_html=True)
-
-    st.markdown("#### Log care")
-    source = st.segmented_control("Logging as", [REAL, VIRTUAL], default=REAL, key="log_source",
-                                  format_func=lambda x: "🐕 Real pet" if x == REAL else "🎮 Virtual companion") or REAL
-    st.caption("**Real** care is what you did for the actual animal, so it trains the routine learner and unlocks the companion's mood. "
-               "**Virtual** care is play with the companion and can never raise it above the real pet's level.")
-    for col, (kind, label) in zip(st.columns(len(CARE_BUTTONS)), CARE_BUTTONS):
-        if col.button(label, key=f"log_{kind}", use_container_width=True):
-            care_log.record(CareEvent(pet.name, kind, datetime.now().replace(second=0, microsecond=0), source))
-            care_log.save(LOG_PATH)
-            st.session_state.reaction = REACTIONS[kind]
-            st.rerun()
-
     agent = CareAgent(owner, availability, care_log, _kb(), style)
     brief = agent.run(now)
-    st.markdown("#### Today's briefing")
-    st.markdown(banner("hello", brief.greeting, "👋"), unsafe_allow_html=True)
-    html = "".join(banner("warn", n, "⏰") for n in brief.nudges)
-    if brief.all_done:
-        html += banner("ok", brief.all_done, "🎉")
-    unfit = [a.removeprefix("Could not fit: ").rstrip(".") for a in brief.alerts if a.startswith("Could not fit: ")]
-    html += "".join(banner("err", a, "⚠️") for a in brief.alerts if not a.startswith("Could not fit: "))
-    if unfit:  # one calm banner instead of one red box per task
-        html += banner("warn", "No free window left today for: " + "; ".join(unfit) + ". Add availability or do them tomorrow.", "🗓️")
-    if brief.done:
-        html += banner("ok", "Done today: " + "  ·  ".join(brief.done), "✅")
-    st.markdown(html, unsafe_allow_html=True)
-    if brief.lines:
-        st.markdown(f'<div class="section-sub">Planned for the rest of today ({len(brief.lines)} tasks)</div>'
-                    + "".join(_slot_card(l) for l in brief.lines), unsafe_allow_html=True)
-    st.markdown("".join(banner("info", n, "🌱") for n in brief.learning), unsafe_allow_html=True)
+
+    payload = stage_payload(pet.species, style, synced.shown, now.hour, pet.name)
+    payload["panels"] = {"status": _status_card(pet, companion, synced), "today": _today_html(brief),
+                         "sync": _sync_html(companion, synced, pet.name), "help": HELP_HTML}
+    toast = st.session_state.get("stage_toast")
+    if toast:
+        payload["toast_id"], payload["toast"] = toast
+    pet_stage(payload, key="pet_stage", on_action=_on_action)
+    st.caption("🖱️ Hover the icons on the left for status, today's plan and sync. Click the props or drag the brush onto your pet.")
+
     with st.expander("🔍 What the agent did (reasoning trace)"):
         st.json(brief.trace)
 

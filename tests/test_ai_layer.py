@@ -292,3 +292,60 @@ def test_scenes_are_valid_svg_for_every_time_of_day():
     for style in ("realistic", "robotic"):
         for hour in range(24):
             ET.fromstring(scene_svg(style, hour, belly=hour * 4))
+
+
+# ---- interactive stage: actions from the browser are untrusted input
+from pawpal_ai.actions import ACTION_TO_CARE, handle_action
+from pawpal_ai.pet_art import stage_payload
+from pawpal_ai.props import PROP_ACTIONS, all_props
+
+
+def test_valid_actions_are_recorded_with_the_right_source():
+    log = CareLog()
+    for act, care in ACTION_TO_CARE.items():
+        for mode in (REAL, VIRTUAL):
+            r = handle_action(log, "Rex", {"type": act, "mode": mode, "id": 1}, NOW)
+            assert r.ok and r.event.task_type == care and r.event.source == mode
+    assert len(log.events) == 2 * len(ACTION_TO_CARE)
+
+
+@pytest.mark.parametrize("raw", [None, "feed", 42, [], {}, {"type": "feed"}, {"mode": "real"},
+                                 {"type": "explode", "mode": "real"}, {"type": "feed", "mode": "admin"},
+                                 {"type": ["feed"], "mode": "real"}, {"type": "feed", "mode": None}])
+def test_tampered_or_malformed_actions_are_ignored_not_crashing(raw):
+    log = CareLog()
+    r = handle_action(log, "Rex", raw, NOW)
+    assert not r.ok and log.events == []
+
+
+def test_action_without_a_pet_is_ignored():
+    assert not handle_action(CareLog(), None, {"type": "feed", "mode": "real"}, NOW).ok
+
+
+def test_virtual_action_cannot_make_the_companion_happier_than_real_care():
+    log = CareLog()
+    for act in ("feed", "play", "groom"):
+        handle_action(log, "Rex", {"type": act, "mode": VIRTUAL}, NOW)
+    assert compute_synced_state(log, "Rex", NOW).shown.mood == "needy"
+    for act in ("feed", "walk", "groom"):
+        handle_action(log, "Rex", {"type": act, "mode": REAL}, NOW)
+    assert compute_synced_state(log, "Rex", NOW).shown.mood == "happy"
+
+
+@pytest.mark.parametrize("style", ["realistic", "robotic"])
+def test_props_are_valid_svg_and_cover_every_action(style):
+    props = all_props(style, belly=80)
+    assert set(props) == set(PROP_ACTIONS) and set(PROP_ACTIONS.values()) == set(ACTION_TO_CARE) | {"play", "walk", "groom", "meds", "feed"}
+    for svg in props.values():
+        ET.fromstring(svg)
+
+
+def test_bowl_is_full_only_when_the_pet_is_fed():
+    assert all_props("realistic", 90)["bowl"] != all_props("realistic", 10)["bowl"]
+
+
+def test_stage_payload_is_complete_and_valid():
+    p = stage_payload("cat", "robotic", CompanionState(5, 10, 20), 14, "Mia")
+    assert {"scene", "pet", "props", "style", "mood", "chip", "name", "mode"} <= set(p)
+    ET.fromstring(p["scene"]); ET.fromstring(p["pet"])
+    assert p["mood"] == "needy" and p["chip"] == "Lab mode" and 'class="pet"' in p["pet"]

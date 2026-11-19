@@ -58,7 +58,7 @@ def _ball(x: int = 480, y: int = 300) -> str:
             f'<circle cx="{x - 7}" cy="{y - 8}" r="5" fill="#fff" opacity=".6"/>')
 
 
-def garden(hour: int, belly: int) -> str:
+def garden(hour: int, belly: int, props: bool = True) -> str:
     pid = period(hour)
     top, bottom, far, near, orb, stars, ground = SKIES[pid]
     night = period(hour) == "night"
@@ -79,17 +79,18 @@ def garden(hour: int, belly: int) -> str:
   {_fence()}
   <path d="M-10 252 Q300 232 620 252 V340 H-10Z" fill="{ground}"/>
   <path d="M-10 276 Q300 262 620 276 V340 H-10Z" fill="#000" opacity=".06"/>
-  {_flowers()}{_bowl(belly >= 50)}{_ball()}
+  {_flowers()}{_bowl(belly >= 50) + _ball() if props else ''}
 </svg>"""
 
 
-def lab(belly: int) -> str:
+def lab(belly: int, props: bool = True) -> str:
     skyline = "".join(f'<rect x="{x}" y="{200 - h}" width="{w}" height="{h}" fill="#1b2a52"/>' +
                       "".join(f'<rect x="{x + 5}" y="{200 - h + 8 + r * 14}" width="5" height="6" fill="#ffd479" opacity=".8"/>' for r in range(max(1, h // 22)) if (x + r) % 3)
                       for x, w, h in [(380, 34, 80), (418, 26, 110), (448, 40, 64), (492, 30, 96), (526, 38, 70)])
     grid = "".join(f'<line x1="{x}" y1="252" x2="{300 + (x - 300) * 3.4}" y2="340" stroke="#4be1ff" stroke-width="1.2" opacity=".35"/>' for x in range(0, 640, 50))
     rows = "".join(f'<line x1="0" y1="{y}" x2="600" y2="{y}" stroke="#4be1ff" stroke-width="1.2" opacity=".28"/>' for y in (262, 278, 300, 328))
     pellets = ('<circle cx="124" cy="296" r="5" fill="#ffb35e"/><circle cx="138" cy="299" r="5" fill="#ffd479"/><circle cx="110" cy="299" r="5" fill="#ffd479"/>' if belly >= 50 else "")
+    dock = f'<path d="M90 306 h70 l-8 -18 h-54 z" fill="#7d8fb8"/><rect x="90" y="306" width="70" height="8" rx="4" fill="#56658f"/>{pellets}'
     return f"""<svg class="scene" viewBox="0 0 {W} {H}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <defs>
     <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d2347"/><stop offset="1" stop-color="#2d3566"/></linearGradient>
@@ -109,12 +110,13 @@ def lab(belly: int) -> str:
   {grid}{rows}
   <ellipse cx="300" cy="300" rx="150" ry="34" fill="url(#pad)"/>
   <ellipse cx="300" cy="300" rx="104" ry="22" fill="none" stroke="#4be1ff" stroke-width="3" opacity=".8"/>
-  <path d="M90 306 h70 l-8 -18 h-54 z" fill="#7d8fb8"/><rect x="90" y="306" width="70" height="8" rx="4" fill="#56658f"/>{pellets}
-  <g transform="translate(480 300)"><circle r="19" fill="#b07bff"/><circle r="9" fill="#1d2347"/>{"".join(f'<rect x="-3" y="-25" width="6" height="9" rx="2" fill="#b07bff" transform="rotate({a})"/>' for a in range(0, 360, 45))}</g>
+  {dock if props else ""}
+  <g transform="translate(480 300)" {"" if props else 'display="none"'}><circle r="19" fill="#b07bff"/><circle r="9" fill="#1d2347"/>{"".join(f'<rect x="-3" y="-25" width="6" height="9" rx="2" fill="#b07bff" transform="rotate({a})"/>' for a in range(0, 360, 45))}</g>
 </svg>"""
 
 
-def scene_svg(style: str, hour: int, belly: int) -> str:
+def scene_svg(style: str, hour: int, belly: int, props: bool = True) -> str:
+    """props=False leaves out the bowl/ball/dock so the interactive stage can draw clickable ones."""
     if style == "robotic":
-        return lab(belly)
-    return garden(hour, belly)
+        return lab(belly, props)
+    return garden(hour, belly, props)

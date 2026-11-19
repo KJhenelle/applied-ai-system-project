@@ -1,0 +1,71 @@
+.pp-root{position:relative;font-family:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI",system-ui,sans-serif;--stage-h:clamp(420px,calc(100vh - 400px),640px)}
+.stage{position:relative;height:var(--stage-h);border-radius:30px;overflow:hidden;box-shadow:0 18px 44px rgba(120,60,80,.24);user-select:none;-webkit-user-select:none}
+.stage.mode-real{box-shadow:0 0 0 4px #2fb67c,0 18px 44px rgba(47,182,124,.35)}
+.scene-layer,.scene-layer .scene{position:absolute;inset:0;width:100%;height:100%}
+.stage .scene{position:absolute}
+.petwrap{position:absolute;left:50%;bottom:-2.5%;width:min(430px,50%);transform:translateX(-50%);pointer-events:none}
+.petbox{width:100%;transform-origin:50% 100%}
+.petwrap .pet{position:static;transform:none;width:100%;height:auto;aspect-ratio:1;display:block;overflow:visible}
+.chip{position:absolute;left:84px;top:14px;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:800;background:rgba(255,255,255,.85);color:#4a3b45;backdrop-filter:blur(4px)}
+.robotic .chip{background:rgba(20,28,64,.72);color:#8cf0ff}
+
+/* mode toggle */
+.modebar{position:absolute;right:14px;top:12px;display:flex;background:rgba(255,255,255,.88);border-radius:999px;padding:4px;gap:2px;box-shadow:0 4px 14px rgba(0,0,0,.15);backdrop-filter:blur(6px);z-index:6}
+.robotic .modebar{background:rgba(20,28,64,.78)}
+.modebar button{border:0;background:transparent;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:800;font-family:inherit;color:#6b5a64;cursor:pointer}
+.robotic .modebar button{color:#a9b6e6}
+.modebar button.on{background:linear-gradient(120deg,#ff8a65,#ff6b8a);color:#fff;box-shadow:0 2px 8px rgba(255,107,107,.4)}
+.mode-real .modebar button.on{background:linear-gradient(120deg,#2fb67c,#43d49a)}
+
+/* hover dock */
+.dock{position:absolute;left:14px;top:14px;display:flex;flex-direction:column;gap:10px;z-index:7}
+.dock-item{position:relative}
+.dock-item>button{width:58px;height:58px;border:0;border-radius:18px;background:rgba(255,255,255,.9);box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:22px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;transition:transform .12s,background .15s;backdrop-filter:blur(6px)}
+.dock-item>button span{font-size:10px;font-weight:800;font-family:inherit;color:#7a6a74;margin-top:-1px}
+.robotic .dock-item>button{background:rgba(20,28,64,.82)}.robotic .dock-item>button span{color:#8cf0ff}
+.dock-item:hover>button,.dock-item.open>button,.dock-item:focus-within>button{transform:scale(1.07);background:#fff}
+.robotic .dock-item:hover>button,.robotic .dock-item.open>button{background:#27327a}
+.flyout{position:absolute;left:62px;top:0;width:340px;max-height:calc(var(--stage-h) - 40px);overflow:auto;background:rgba(255,255,255,.97);border-radius:22px;padding:14px 16px;box-shadow:0 14px 40px rgba(60,30,50,.3);
+  opacity:0;visibility:hidden;transform:translateX(-10px) scale(.97);transform-origin:left top;transition:opacity .16s,transform .16s,visibility .16s;color:#3b2f36;font-size:14px;line-height:1.35}
+.flyout:before{content:"";position:absolute;left:-12px;top:0;width:14px;height:100%}
+.dock-item:hover .flyout,.dock-item.open .flyout,.dock-item:focus-within .flyout{opacity:1;visibility:visible;transform:none}
+.flyout h4{margin:.1rem 0 .5rem;font-size:15px}
+.flyout ol{margin:.2rem 0 0 1.1rem;padding:0}.flyout li{margin:.25rem 0}
+
+/* props */
+.prop{position:absolute;border:0;background:none;padding:0;cursor:pointer;z-index:4;transition:transform .15s,filter .15s;animation:nudge 4s ease-in-out infinite}
+.prop .art svg{width:100%;height:auto;display:block;overflow:visible;filter:drop-shadow(0 4px 5px rgba(0,0,0,.2))}
+.prop:hover,.prop:focus-visible{transform:scale(1.1) rotate(-2deg);filter:brightness(1.07);outline:none;animation:none}
+.prop:hover .art svg,.prop:focus-visible .art svg{filter:drop-shadow(0 0 10px rgba(255,255,255,.95)) drop-shadow(0 4px 5px rgba(0,0,0,.2))}
+.tip{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translate(-50%,6px);white-space:nowrap;background:#3b2f36;color:#fff;font-size:12.5px;font-weight:700;font-family:inherit;padding:5px 11px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .15s,transform .15s}
+.prop:hover .tip,.prop:focus-visible .tip{opacity:1;transform:translate(-50%,0)}
+.prop-bowl{left:7%;bottom:5%;width:15%;animation-delay:-1s}
+.prop-ball{right:9%;bottom:6%;width:9%;animation-delay:-2s}
+.prop-leash{left:3%;top:43%;width:7%;animation-delay:-3s}
+.prop-brush{left:27%;bottom:3.5%;width:13%;transform:rotate(-8deg);touch-action:none;cursor:grab;animation-delay:-.5s}
+.prop-brush.dragging{cursor:grabbing;transition:none;z-index:9;animation:none}
+.prop-brush .tip{bottom:calc(100% + 14px)}
+.prop-cabinet{right:3.5%;top:16%;width:10.5%;animation-delay:-1.6s}
+.realistic .prop-cabinet:after{content:"";position:absolute;left:42%;top:98%;width:16%;height:430%;background:linear-gradient(90deg,#b8763e,#d49a5c);border-radius:5px;z-index:-1}
+.robotic .prop-cabinet{right:auto;left:5%;top:36%}
+.robotic .prop-leash{left:auto;right:3.5%;top:60%}
+.prop-cabinet .door{transform-box:fill-box;transform-origin:0% 50%;transition:transform .45s}
+.prop-cabinet.open .door{transform:scaleX(.12)}
+.prop-bowl.shake{animation:shake .6s ease-in-out}
+.prop-leash.used{opacity:.25}
+@keyframes nudge{0%,90%,100%{translate:0 0}94%{translate:0 -4px}97%{translate:0 0}}
+@keyframes shake{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg)}60%{transform:rotate(8deg)}}
+
+/* pet states */
+.stage.scrub .petwrap .bob{animation:shake .3s ease-in-out infinite}
+.stage.scrub .petbox{filter:drop-shadow(0 0 16px rgba(255,255,255,.9))}
+.react-walk .bob{animation:step .45s ease-in-out infinite!important}
+@keyframes step{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-12px) rotate(2deg)}}
+
+/* effects + toast */
+.fx{position:absolute;inset:0;pointer-events:none;z-index:8;overflow:hidden}
+.fxe{position:absolute;transform:translate(-50%,-50%);will-change:transform;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))}
+.toast{position:absolute;left:50%;top:14px;transform:translate(-50%,-20px);max-width:70%;padding:9px 18px;border-radius:999px;background:#3b2f36;color:#fff;font-size:14px;font-weight:700;font-family:inherit;opacity:0;transition:opacity .2s,transform .2s;z-index:10;pointer-events:none;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,56px)}
+@media (max-width:700px){.flyout{width:min(300px,70vw)}.petwrap{width:62%}.chip{display:none}.dock-item>button{width:50px;height:50px}}
+.prop.dragging .tip{display:none}

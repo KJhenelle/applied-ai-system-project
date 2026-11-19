@@ -32,6 +32,14 @@
 | guardrail | 'Who won the 2022 World Cup?' | PASS | expected no_retrieval, got no_retrieval |
 | guardrail | 'How often should I walk my dog?' | PASS | expected None, got None |
 | guardrail | 'Can my dog eat grapes?' | PASS | expected None, got None |
+| actions | tampered 'None' ignored | PASS |  |
+| actions | tampered 'feed' ignored | PASS |  |
+| actions | tampered '{}' ignored | PASS |  |
+| actions | tampered "{'type': 'feed'}" ignored | PASS |  |
+| actions | tampered "{'type': 'explode', 'mode': 'real'}" ignored | PASS |  |
+| actions | tampered "{'type': 'feed', 'mode': 'admin'}" ignored | PASS |  |
+| actions | tampered "{'type': ['feed'], 'mode': 'real'}" ignored | PASS |  |
+| actions | valid groom recorded as virtual grooming | PASS |  |
 | agent | 06:00 no task scheduled in the past | PASS |  |
 | agent | 06:00 required meds scheduled or flagged | PASS |  |
 | agent | 06:00 every tip is cited | PASS |  |
@@ -56,5 +64,6 @@
 retrieval  16/18 passed
 routine    5/5 passed
 guardrail  9/9 passed
+actions    8/8 passed
 agent      20/20 passed
-TOTAL      50/52 passed (96%)
+TOTAL      58/60 passed (97%)

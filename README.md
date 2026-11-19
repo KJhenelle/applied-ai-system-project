@@ -79,7 +79,7 @@ flowchart TD
     GUARD["Guardrails<br/>empty / too long / emergency to vet"]
     ASK["Q&A: retrieve, gate by score,<br/>answer with sources or say 'I don't know'"]
 
-    COMP["Companion persona<br/>realistic or robotic voice"]
+    COMP["Companion persona<br/>realistic or robotic voice + chibi SVG art<br/>(mood, need bubble, reaction)"]
     OUT[/"Briefing: schedule + why + tips + nudges + alerts"/]
     VET(["Veterinarian / poison hotline<br/>(human in the loop)"])
     OWNERCHECK(["Owner reviews, logs care<br/>(human in the loop)"])
@@ -94,6 +94,7 @@ flowchart TD
     QUESTION --> GUARD
     GUARD -- "ok" --> ASK
     GUARD -- "emergency" --> VET
+    LOG -- "real care caps mood" --> COMP
     CHECK -- "drop uncited tip / raise alert" --> COMP --> OUT --> OWNERCHECK
     ASK --> OWNERCHECK
     OWNERCHECK -- "logs what was done" --> EVENTS

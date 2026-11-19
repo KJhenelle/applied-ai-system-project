@@ -11,12 +11,13 @@ Two art styles show the same state:
 from __future__ import annotations
 
 from .companion import CompanionState
+from .props import all_props
 from .scene import period, scene_svg
 
 MOODS = ("happy", "okay", "needy")
-REACTIONS = {"feeding": "eat", "walk": "play", "enrichment": "play", "grooming": "groom", "meds": "heart"}
+REACTIONS = {"feeding": "eat", "walk": "walk", "enrichment": "play", "grooming": "groom", "meds": "heart"}
 NEED_BUBBLE = {"belly": "🍖", "fun": "🧸", "clean": "🛁"}
-REACTION_EMOJI = {"eat": "😋", "play": "🎾", "groom": "✨", "heart": "💖"}
+REACTION_EMOJI = {"eat": "😋", "play": "🎾", "walk": "🦮", "groom": "✨", "heart": "💖"}
 
 PALETTES = {
     ("dog", "realistic"): dict(fur="#e8b878", dark="#a9693a", light="#fff1dc", inner="#f6c4b8", ear="#b9703f"),
@@ -243,3 +244,22 @@ def render_html(species: str, style: str, state: CompanionState, reaction: str |
     cls = f"{style} {state.mood}" + (f" react-{reaction}" if reaction else "")
     label = {"dawn": "Morning", "day": "Daytime", "sunset": "Evening", "night": "Night"}[period(hour)] if style == "realistic" else "Lab mode"
     return f"<style>{CSS}</style><div class='stage {cls}'>{scene_svg(style, hour, state.belly)}<div class='chip'>{label}</div>{svg}</div>"
+
+
+def stage_label(style: str, hour: int) -> str:
+    return {"dawn": "Morning", "day": "Daytime", "sunset": "Evening", "night": "Night"}[period(hour)] if style == "realistic" else "Lab mode"
+
+
+def stage_payload(species: str, style: str, state: CompanionState, hour: int, name: str, mode: str = "virtual") -> dict:
+    """Everything the interactive stage needs to draw itself (panels are added by the caller)."""
+    return {
+        "scene": scene_svg(style, hour, state.belly, props=False),
+        "pet": build_svg(species, style, state.mood, lowest_need(state)).replace("<svg ", '<svg class="pet" ', 1),
+        "props": all_props(style, state.belly),
+        "style": style, "mood": state.mood, "chip": stage_label(style, hour), "name": name, "mode": mode,
+    }
+
+
+def component_css() -> str:
+    """The shared animation CSS without the page-level html/body rule (which would leak globally)."""
+    return "\n".join(l for l in CSS.strip().splitlines() if not l.startswith("html,body"))

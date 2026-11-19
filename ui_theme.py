@@ -9,18 +9,18 @@ CSS = """
   --line:rgba(80,40,60,.10);--shadow:0 6px 22px rgba(120,60,80,.10);--ok:#2fb67c;--warn:#f5a524;--err:#e5484d}
 html,body,[class*="css"]{font-family:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI",system-ui,sans-serif}
 .stApp{background:radial-gradient(1200px 500px at 85% -10%,#ffe3d1 0%,transparent 60%),radial-gradient(900px 500px at -10% 10%,#ffe9f0 0%,transparent 55%),var(--cream)}
-.block-container{max-width:1020px;padding-top:1.4rem;padding-bottom:4rem}
+.block-container{max-width:1020px;padding-top:.8rem;padding-bottom:4rem}
 header[data-testid="stHeader"]{background:transparent}
 h1,h2,h3,h4{color:var(--ink);letter-spacing:-.01em}
 h4{margin-top:1.4rem}
 
 /* hero */
-.hero{position:relative;overflow:hidden;color:#fff;border-radius:28px;padding:1.7rem 2rem 1.5rem;margin-bottom:1.2rem;
+.hero{position:relative;overflow:hidden;color:#fff;border-radius:26px;padding:1.1rem 1.8rem 1rem;margin-bottom:.9rem;
   background:linear-gradient(120deg,#ff8a65 0%,#ff6b8a 55%,#c86bff 120%);box-shadow:0 14px 34px rgba(255,107,107,.30)}
 .hero:before,.hero:after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.13)}
 .hero:before{width:260px;height:260px;right:-70px;top:-110px}.hero:after{width:150px;height:150px;right:120px;bottom:-90px}
-.hero h1{margin:0;font-size:2.15rem;color:#fff;font-weight:800}
-.hero p{margin:.25rem 0 1rem;opacity:.95;font-size:1.02rem}
+.hero h1{margin:0;font-size:1.8rem;color:#fff;font-weight:800}
+.hero p{margin:.15rem 0 .65rem;opacity:.95;font-size:1.02rem}
 .pills{display:flex;gap:.55rem;flex-wrap:wrap;position:relative;z-index:1}
 .pill{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);padding:.3rem .85rem;border-radius:999px;font-weight:700;font-size:.88rem;backdrop-filter:blur(4px)}
 
@@ -83,6 +83,12 @@ iframe{border-radius:26px;border:none!important}
 .empty .big{font-size:3.2rem}.empty h3{margin:.3rem 0}
 </style>
 """
+
+
+# The stage component lives in a shadow root, so page CSS does not reach it. Reuse the card/bar/banner
+# rules (everything from "/* cards */" on) plus the colour variables.
+PANEL_CSS = (CSS[CSS.index(":root{"):CSS.index("html,body")].replace(":root{", ":root,:host{", 1)
+             + CSS[CSS.index("/* cards */"):CSS.index("</style>")])
 
 
 def banner(kind: str, text: str, icon: str = "") -> str:
