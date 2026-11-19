@@ -3,6 +3,8 @@ from html import escape
 
 import streamlit as st
 
+import companion_ui
+
 from pawpal_system import (
     Frequency,
     Owner,
@@ -90,8 +92,8 @@ m1.metric("🐾 Pets", len(owner.pets))
 m2.metric("📋 Tasks", len(all_tasks))
 m3.metric("⏰ Free windows", len(st.session_state.availability))
 
-tab_pets, tab_tasks, tab_time, tab_plan = st.tabs(
-    ["🐕 Owner & Pets", "📋 Tasks", "⏰ Availability", "📅 Today's Plan"]
+tab_pets, tab_tasks, tab_time, tab_plan, tab_companion = st.tabs(
+    ["🐕 Owner & Pets", "📋 Tasks", "⏰ Availability", "📅 Today's Plan", "🤖 Companion"]
 )
 
 # --- Owner & pets ----------------------------------------------------------
@@ -284,3 +286,7 @@ with tab_plan:
             st.text(scheduler.explain_choices(plan))
     else:
         st.caption("Add pets, tasks and availability, then generate your plan.")
+
+# --- Companion (AI layer) --------------------------------------------------
+with tab_companion:
+    companion_ui.render(owner, st.session_state.availability)
