@@ -1,5 +1,7 @@
 # PawPal+ Companion: an agentic pet-care assistant with a virtual pet
 
+🎥 **Video walkthrough:** [https://www.loom.com/share/9e3ade8080464f6086d30067494b5ff9](https://www.loom.com/share/9e3ade8080464f6086d30067494b5ff9)
+
 > **Base project:** *PawPal+* (Module 2). The original PawPal+ was a Streamlit app where an owner
 > entered pets, care tasks (walks, feeding, meds, grooming, enrichment) and free time windows. A
 > rule-based scheduler then built a conflict-aware daily plan with a plain-English reason for each
@@ -382,4 +384,4 @@ ai_interactions.md          agent reasoning trace + AI-collaboration log
 model_card.md               limitations, misuse, surprises, AI collaboration
 ```
 
-Loom walkthrough: _not recorded yet._
+Loom walkthrough: https://www.loom.com/share/9e3ade8080464f6086d30067494b5ff9
