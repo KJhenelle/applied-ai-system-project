@@ -376,3 +376,108 @@ def test_ui_works_with_many_pets():
     for style in ("robotic", "realistic"):
         next(g for g in at.segmented_control if g.key == "companion_style").set_value(style).run()
         assert not at.exception
+
+
+# ---- saving the household and exporting the plan
+from datetime import date
+
+from pawpal_ai import storage
+from pawpal_system import Frequency, Owner, Pet, Priority, Scheduler, Task, TaskType, TimeSlot
+
+
+@pytest.fixture(autouse=True)
+def isolated_data_dir(tmp_path, monkeypatch):
+    """No test may ever write into the real ./data directory."""
+    monkeypatch.setenv("PAWPAL_DATA_DIR", str(tmp_path / "data"))
+
+
+def _household():
+    o = Owner("Jo", "jo@example.com")
+    rex = Pet("Rex", "dog", 3, "likes, commas; and semicolons")
+    o.add_pet(rex)
+    rex.add_task(Task("Walk", rex, TaskType.WALK, 30, Priority.HIGH, preferred_time=TimeSlot(time(8), time(9)),
+                      frequency=Frequency.WEEKLY, due_date=date(2026, 11, 18), required=True))
+    rex.add_task(Task("Breakfast", rex, TaskType.FEEDING, 10, Priority.MEDIUM, is_completed=True))
+    return o, [TimeSlot(time(8), time(10)), TimeSlot(time(17), time(19))]
+
+
+def test_household_roundtrip_is_exact():
+    o, av = _household()
+    storage.save_household(o, av)
+    o2, av2 = storage.load_household()
+    assert storage.household_to_dict(o2, av2) == storage.household_to_dict(o, av)
+    t = o2.pets[0].tasks[0]
+    assert t.pet is o2.pets[0] and t.required and t.frequency == Frequency.WEEKLY and o2.pets[0].tasks[1].is_completed
+
+
+def test_missing_household_returns_none():
+    assert storage.load_household() is None
+
+
+@pytest.mark.parametrize("content", ["{not json", "[]", '{"name": "x", "pets": [{"name": "A"}]}', '{"name":"x","pets":[{"name":"A","species":"dog","age":1,"tasks":[{"title":"t","type":"bogus"}]}]}'])
+def test_corrupt_household_never_crashes(content):
+    path = storage.household_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content)
+    assert storage.load_household() is None
+    assert path.with_suffix(".corrupt").exists()
+
+
+def test_save_leaves_no_temp_file_and_empty_availability_survives():
+    o, _ = _household()
+    storage.save_household(o, [])
+    assert not storage.household_path().with_suffix(".tmp").exists()
+    assert storage.load_household()[1] == []
+
+
+def test_plan_exports():
+    o, av = _household()
+    plan = Scheduler(o, av).schedule_tasks(date(2026, 11, 18))
+    txt, ics = storage.plan_to_text(plan), storage.plan_to_ics(plan, datetime(2026, 11, 18, 7, 0))
+    assert "Rex: Walk" in txt and "08:00-08:30" in txt
+    assert ics.startswith("BEGIN:VCALENDAR") and ics.rstrip().endswith("END:VCALENDAR")
+    assert "DTSTART:20261118T080000" in ics and "\r\n" in ics
+    assert ics == storage.plan_to_ics(plan, datetime(2026, 11, 18, 7, 0))  # stable UIDs: re-export won't duplicate events
+
+
+def test_ics_escapes_special_characters_and_folds_long_lines():
+    o = Owner("Jo", ""); p = Pet("Rex", "dog", 1); o.add_pet(p)
+    p.add_task(Task("Pills, with; semicolon " + "x" * 120, p, TaskType.MEDS, 5, Priority.HIGH, required=True))
+    ics = storage.plan_to_ics(Scheduler(o, [TimeSlot(time(8), time(9))]).schedule_tasks(date(2026, 11, 18)))
+    assert "\\," in ics and "\;" in ics
+    assert all(len(line.encode()) <= 75 for line in ics.split("\r\n"))
+
+
+def test_ui_restores_the_saved_household_on_a_fresh_start():
+    o, av = _household()
+    storage.save_household(o, av)
+    at = _fresh_app_test().run()
+    assert not at.exception
+    assert [p.name for p in at.session_state["owner"].pets] == ["Rex"]
+    assert len(at.session_state["availability"]) == 2
+
+
+def test_demo_household_is_never_written_to_disk():
+    at = _fresh_app_test().run()  # empty data dir
+    next(b for b in at.button if "demo household" in b.label).click().run()
+    assert not at.exception and at.session_state["demo"] is True
+    assert not storage.household_path().exists()
+    assert not storage.care_log_path().exists()
+
+
+def test_ui_autosaves_changes():
+    o, av = _household()
+    at = _fresh_app_test()
+    at.session_state["owner"], at.session_state["availability"] = o, av
+    at.run()
+    assert storage.load_household() is not None and storage.load_household()[0].pets[0].name == "Rex"
+
+
+def test_plan_tab_offers_calendar_and_text_downloads():
+    o, av = _household()
+    at = _fresh_app_test()
+    at.session_state["owner"], at.session_state["availability"] = o, av
+    at.run()
+    next(b for b in at.button if "Generate schedule" in b.label).click().run()
+    assert not at.exception
+    assert len(at.get("download_button")) == 2

@@ -6,6 +6,7 @@ flowchart TD
     end
 
     LOG[("CareLog<br/>data/care_log.json")]
+    HOUSE[("Household (autosaved)<br/>data/household.json")]
     KB[("Knowledge base<br/>knowledge/*.md")]
 
     subgraph Agent["CareAgent  (pawpal_ai/agent.py)"]
@@ -28,9 +29,10 @@ flowchart TD
     ACT["actions.py validates browser input<br/>(untrusted), then records the event"]
     OWNERCHECK(["Owner reviews, logs care<br/>(human in the loop)"])
     TRACE[("logs/agent_trace.jsonl<br/>logs/pawpal.log")]
-    EVAL["evaluate.py + pytest<br/>60 eval cases, 91 unit tests"]
+    EVAL["evaluate.py + pytest<br/>60 eval cases, 104 unit tests"]
 
     OWNER --> OBS
+    OWNER -. "autosave / restore" .-> HOUSE
     EVENTS --> LOG --> OBS
     LOG --> LEARN
     KB --> RET

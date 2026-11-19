@@ -16,9 +16,9 @@ from pawpal_ai.actions import ACTION_TO_CARE, CARE_TO_NEED, handle_action
 from pawpal_ai.pet_art import render_html, stage_payload
 from pawpal_ai.retriever import KnowledgeBase
 from stage import pet_stage
+from pawpal_ai import storage
 from ui_theme import banner
 
-LOG_PATH = Path("data/care_log.json")
 
 
 @st.cache_resource
@@ -34,9 +34,15 @@ def _show_html(html: str, height: int) -> None:
         components.html(html, height=height)
 
 
+def _save_log(care_log: CareLog) -> None:
+    """The demo household's fake history must never be written to disk (it would pollute a real log)."""
+    if not st.session_state.get("demo"):
+        care_log.save(storage.care_log_path())
+
+
 def _ensure_log() -> CareLog:
     if "care_log" not in st.session_state:
-        st.session_state.care_log = CareLog.load(LOG_PATH)
+        st.session_state.care_log = CareLog.load(storage.care_log_path())
     return st.session_state.care_log
 
 
@@ -100,6 +106,7 @@ def _empty_state() -> None:
 def _load_demo() -> None:
     owner, avail, log = build_demo(datetime.now())
     st.session_state.owner, st.session_state.availability, st.session_state.care_log = owner, avail, log
+    st.session_state.demo = True
     st.rerun()
 
 
@@ -147,7 +154,7 @@ def _on_action() -> None:
     st.session_state.pop("stage_toast", None)
     if not result.ok:
         return
-    care_log.save(LOG_PATH)
+    _save_log(care_log)
     # If this was game play and real care is the bottleneck, say so: the pet will not cheer up.
     need = CARE_TO_NEED.get(result.event.task_type)
     synced = compute_synced_state(care_log, pet_name, now)
@@ -164,6 +171,13 @@ def render(owner, availability) -> None:
         _empty_state()
         return
 
+    if st.session_state.get("demo"):
+        c1, c2 = st.columns([4, 1])
+        c1.info("You're viewing the **demo household**. Nothing here is saved.")
+        if c2.button("Use my own pets", use_container_width=True):
+            for k in ("owner", "availability", "care_log", "demo", "_saved_snapshot"):
+                st.session_state.pop(k, None)
+            st.rerun()
     top = st.columns([2, 3, 2])
     pet_name = top[0].selectbox("Companion for", [p.name for p in owner.pets], key="companion_pet")
     pet = next(p for p in owner.pets if p.name == pet_name)

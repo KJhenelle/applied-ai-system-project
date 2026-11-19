@@ -19,7 +19,7 @@ questions using a **cited knowledge base**. It runs fully offline with no API ke
 | **Agentic workflow** | [pawpal_ai/agent.py](pawpal_ai/agent.py) | observe, learn, plan, retrieve, check, with a saved reasoning trace |
 | **RAG** | [pawpal_ai/retriever.py](pawpal_ai/retriever.py), [knowledge/](knowledge/) | each task gets a cited tip; Q&A answers *only* from retrieved text, or says it doesn't know |
 | **Learning from history** | [pawpal_ai/routine_learner.py](pawpal_ai/routine_learner.py) | learned times become scheduling hints, so the plan differs from the original scheduler's |
-| **Reliability + guardrails** | [pawpal_ai/guardrails.py](pawpal_ai/guardrails.py), [evaluate.py](evaluate.py), [tests/](tests/) | emergency routing, input limits, output checks, 91 unit tests, 60-case eval harness |
+| **Reliability + guardrails** | [pawpal_ai/guardrails.py](pawpal_ai/guardrails.py), [evaluate.py](evaluate.py), [tests/](tests/) | emergency routing, input limits, output checks, 104 unit tests, 60-case eval harness |
 | **Specialized voice** | [pawpal_ai/companion.py](pawpal_ai/companion.py) | two personas render the same facts; the virtual pet's needs drain without care |
 
 ## The app
@@ -55,6 +55,16 @@ each interaction back as `{type, mode}`. Python treats that message as **untrust
 ([pawpal_ai/actions.py](pawpal_ai/actions.py)): anything malformed or tampered with is ignored and logged,
 never recorded. Props are drawn in [pawpal_ai/props.py](pawpal_ai/props.py).
 
+### Saving your schedule
+
+Your household (owner, pets, tasks, free windows) **saves automatically** to `data/household.json` as you
+edit and **comes back when you reopen the app**; the care history saves to `data/care_log.json`. Saves are
+atomic (written to a temp file, then renamed), a corrupt file is set aside as `*.corrupt` instead of crashing
+the app, and the folder can be moved with the `PAWPAL_DATA_DIR` environment variable. The demo household is
+never saved, so it can't mix fake history into a real one. On the **Today's Plan** tab you can also download
+the plan as a **calendar file (.ics)** for Apple/Google/Outlook, or as plain text. Code:
+[pawpal_ai/storage.py](pawpal_ai/storage.py).
+
 ### The virtual pet (chibi art in a living scene)
 
 The companion is drawn as smooth chibi-style vector art (SVG + CSS animation, no image files) and placed in a
@@ -88,6 +98,7 @@ flowchart TD
     end
 
     LOG[("CareLog<br/>data/care_log.json")]
+    HOUSE[("Household (autosaved)<br/>data/household.json")]
     KB[("Knowledge base<br/>knowledge/*.md")]
 
     subgraph Agent["CareAgent  (pawpal_ai/agent.py)"]
@@ -110,9 +121,10 @@ flowchart TD
     ACT["actions.py validates browser input<br/>(untrusted), then records the event"]
     OWNERCHECK(["Owner reviews, logs care<br/>(human in the loop)"])
     TRACE[("logs/agent_trace.jsonl<br/>logs/pawpal.log")]
-    EVAL["evaluate.py + pytest<br/>60 eval cases, 91 unit tests"]
+    EVAL["evaluate.py + pytest<br/>60 eval cases, 104 unit tests"]
 
     OWNER --> OBS
+    OWNER -. "autosave / restore" .-> HOUSE
     EVENTS --> LOG --> OBS
     LOG --> LEARN
     KB --> RET
@@ -275,7 +287,7 @@ TOTAL      50/52 passed (96%)
 
 | Check | Result |
 |---|---|
-| Unit tests (`pytest`) | **91 / 91 passed** |
+| Unit tests (`pytest`) | **104 / 104 passed** |
 | Eval: retrieval top-1 on labelled questions | **16 / 18** (12 written during development, 6 harder paraphrases written afterwards) |
 | Eval: routine learner (recovers true time, detects two meals, low confidence on thin or noisy data) | 5 / 5 |
 | Eval: guardrails (empty, oversize, emergency, off-topic, normal) | 9 / 9 |
@@ -347,10 +359,10 @@ app.py, companion_ui.py     Streamlit UI (Companion tab added)
 stage.py, ui/               interactive scene: Streamlit v2 component (JS + CSS)
 ui_theme.py                 shared page styles
 pawpal_system.py            original PawPal+ core (Module 2)
-pawpal_ai/                  care_log, routine_learner, retriever, guardrails, companion, pet_art, scene, props, actions, agent, demo_data
+pawpal_ai/                  storage, care_log, routine_learner, retriever, guardrails, companion, pet_art, scene, props, actions, agent, demo_data
 knowledge/                  RAG source documents (6 files, 17 sections)
 demo.py, evaluate.py        reproducible demo and evaluation harness
-tests/                      15 original + 76 new unit tests
+tests/                      15 original + 89 new unit tests
 diagrams/architecture.mmd   system diagram (Mermaid source); pawpal_original_uml.mmd is the Module 2 UML
 assets/                     captured run, eval results, sample agent trace
 ai_interactions.md          agent reasoning trace + AI-collaboration log

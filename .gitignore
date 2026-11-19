@@ -6,3 +6,6 @@ __pycache__/
 logs/
 data/care_log.json
 .env
+data/household.json
+data/*.corrupt
+data/*.tmp

@@ -4,7 +4,9 @@ from html import escape
 import streamlit as st
 
 import companion_ui
+import json
 import ui_theme
+from pawpal_ai import storage
 
 from pawpal_system import (
     Frequency,
@@ -34,7 +36,9 @@ st.markdown(ui_theme.CSS, unsafe_allow_html=True)
 # Streamlit reruns this script on every interaction, so anything that must survive
 # lives in st.session_state. Only create the objects the first time through.
 if "owner" not in st.session_state:
-    st.session_state.owner = Owner("Jordan", "")
+    # Restore the saved household if there is one; otherwise start with a blank owner.
+    saved = storage.load_household()
+    st.session_state.owner, st.session_state.availability = saved or (Owner("Jordan", ""), [TimeSlot(time(8), time(10))])
 if "availability" not in st.session_state:
     st.session_state.availability = [TimeSlot(time(8), time(10))]
 
@@ -251,6 +255,12 @@ with tab_plan:
             st.error("A required task did not fit in your availability!")
         for t in plan.unscheduled:
             st.warning(f"Couldn't fit: {t.pet.name} - {t.title} ({t.duration_minutes} min)")
+        d1, d2 = st.columns(2)
+        # on_click="ignore" so downloading does not rerun the page and wipe the plan from the screen.
+        d1.download_button("📅 Add to calendar (.ics)", storage.plan_to_ics(plan), file_name=f"pawpal-{plan_day:%Y-%m-%d}.ics",
+                           mime="text/calendar", use_container_width=True, on_click="ignore")
+        d2.download_button("📄 Download as text", storage.plan_to_text(plan), file_name=f"pawpal-{plan_day:%Y-%m-%d}.txt",
+                           mime="text/plain", use_container_width=True, on_click="ignore")
         with st.expander("📝 Full explanation"):
             st.text(scheduler.explain_choices(plan))
     else:
@@ -259,3 +269,15 @@ with tab_plan:
 # --- Companion (AI layer) --------------------------------------------------
 with tab_companion:
     companion_ui.render(owner, st.session_state.availability)
+
+# --- Auto-save -------------------------------------------------------------
+# Runs at the end of every rerun; only writes when something actually changed. The demo household is
+# never saved, so it can't overwrite (or be mistaken for) a real one.
+if not st.session_state.get("demo") and (owner.pets or storage.household_path().exists()):  # don't save a blank, untouched household
+    try:
+        snapshot = json.dumps(storage.household_to_dict(owner, st.session_state.availability), sort_keys=True)
+        if snapshot != st.session_state.get("_saved_snapshot"):
+            storage.save_household(owner, st.session_state.availability)
+            st.session_state._saved_snapshot = snapshot
+    except OSError as exc:  # a read-only disk must not break the app
+        st.sidebar.warning(f"Could not save your household: {exc}")
