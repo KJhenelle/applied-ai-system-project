@@ -276,16 +276,28 @@ class Scheduler:
                 )
         return warnings
 
-    def schedule_tasks(self, day: date) -> DailyPlan:
-        """Place tasks into non-overlapping free windows; leftovers go to `unscheduled`."""
+    def schedule_tasks(
+        self, day: date, hints: dict[int, tuple[TimeSlot, str]] | None = None
+    ) -> DailyPlan:
+        """Place tasks into non-overlapping free windows; leftovers go to `unscheduled`.
+
+        `hints` maps id(task) -> (window, reason) for tasks that have no preferred time of their
+        own, e.g. a window learned from the pet's history. A task's own preferred time wins.
+        """
+        hints = hints or {}
         plan = DailyPlan(day)
         free = sorted(self.availability, key=lambda s: s.start)  # copy; slots are frozen
         for task in self.prioritize_tasks(self.owner.get_all_tasks(day)):
-            found = self._find_slot(free, task)
+            hint = hints.get(id(task)) if task.preferred_time is None else None
+            found = self._find_slot(free, task, hint[0] if hint else None)
             if found is None:
                 plan.unscheduled.append(task)
                 continue
             slot, reason = found
+            if hint:
+                inside = hint[0].start <= slot.start and slot.end <= hint[0].end
+                note = hint[1] if inside else "learned time unavailable, moved to next free window"
+                reason = f"{reason}, {note}" if reason else note
             plan.add_item(task, slot, reason)
             free = self._carve(free, slot)
         return plan
@@ -305,11 +317,13 @@ class Scheduler:
             )
         return "\n".join(lines)
 
-    def _find_slot(self, free: list[TimeSlot], task: Task) -> tuple[TimeSlot, str] | None:
+    def _find_slot(
+        self, free: list[TimeSlot], task: Task, hint: TimeSlot | None = None
+    ) -> tuple[TimeSlot, str] | None:
         """Earliest fit inside the preferred window if possible, else the first free window."""
         need = task.duration_minutes
-        if task.preferred_time is not None:
-            pref = task.preferred_time
+        pref = task.preferred_time or hint
+        if pref is not None:
             for w in free:
                 lo = max(_minutes(w.start), _minutes(pref.start))
                 hi = min(_minutes(w.end), _minutes(pref.end))
