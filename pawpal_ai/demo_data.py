@@ -16,7 +16,7 @@ TRUE_ROUTINE = [
 ]
 
 
-def build_demo(now: datetime, days: int = 14, seed: int = 7) -> tuple[Owner, list[TimeSlot], CareLog]:
+def build_demo(now: datetime, days: int = 14, seed: int = 7, include_today: bool = True) -> tuple[Owner, list[TimeSlot], CareLog]:
     rng = random.Random(seed)
     owner = Owner("Jordan", "jordan@example.com")
     rex, mia = Pet("Rex", "dog", 3), Pet("Mia", "cat", 5)
@@ -36,6 +36,14 @@ def build_demo(now: datetime, days: int = 14, seed: int = 7) -> tuple[Owner, lis
         for pet, kind, minute, jitter in TRUE_ROUTINE:
             m = minute + rng.randint(-jitter, jitter)
             log.record(CareEvent(pet, kind, datetime.combine(day, time(m // 60, m % 60)), REAL))
+    if include_today:  # whatever has already "happened" earlier today, so a midday demo isn't all overdue
+        for pet, kind, minute, jitter in TRUE_ROUTINE:
+            m = minute + rng.randint(-jitter, jitter)
+            when = datetime.combine(today, time(m // 60, m % 60))
+            if when <= now:
+                log.record(CareEvent(pet, kind, when, REAL))
+        for kind, back in (("feeding", 1), ("enrichment", 2), ("walk", 2), ("grooming", 20)):  # recent game play
+            log.record(CareEvent("Rex", kind, now - timedelta(hours=back), VIRTUAL))
     # Rex was groomed three days ago (weekly care, so it does not drain his real wellbeing yet).
     log.record(CareEvent("Rex", "grooming", datetime.combine(today - timedelta(days=3), time(10, 0)), REAL))
     # Mia is new to the app: only two days of data, so the system must say "still learning".

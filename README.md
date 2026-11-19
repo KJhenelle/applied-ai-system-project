@@ -19,18 +19,30 @@ questions using a **cited knowledge base**. It runs fully offline with no API ke
 | **Agentic workflow** | [pawpal_ai/agent.py](pawpal_ai/agent.py) | observe, learn, plan, retrieve, check, with a saved reasoning trace |
 | **RAG** | [pawpal_ai/retriever.py](pawpal_ai/retriever.py), [knowledge/](knowledge/) | each task gets a cited tip; Q&A answers *only* from retrieved text, or says it doesn't know |
 | **Learning from history** | [pawpal_ai/routine_learner.py](pawpal_ai/routine_learner.py) | learned times become scheduling hints, so the plan differs from the original scheduler's |
-| **Reliability + guardrails** | [pawpal_ai/guardrails.py](pawpal_ai/guardrails.py), [evaluate.py](evaluate.py), [tests/](tests/) | emergency routing, input limits, output checks, 68 unit tests, 52-case eval harness |
+| **Reliability + guardrails** | [pawpal_ai/guardrails.py](pawpal_ai/guardrails.py), [evaluate.py](evaluate.py), [tests/](tests/) | emergency routing, input limits, output checks, 72 unit tests, 52-case eval harness |
 | **Specialized voice** | [pawpal_ai/companion.py](pawpal_ai/companion.py) | two personas render the same facts; the virtual pet's needs drain without care |
 
-## The virtual pet (chibi art)
+## The app
 
-The companion is drawn as smooth chibi-style vector art (SVG + CSS animation, no image files, no
-extra dependencies) and shown in the Companion tab via `st.iframe`. Its **mood** changes the face (happy,
-okay, sad with slanted brows), its **lowest need** shows in a thought bubble (🍖 hungry, 🧸 bored, 🛁 messy),
-and **logging care** plays a one-shot reaction (eating, hopping, sparkles, hearts). The *realistic* style
-is soft fur and big glossy eyes; the *robotic* style is brushed metal, glowing visor eyes and a status LED
-(green / amber / red) on the antenna. Rows: realistic dog, robot dog, realistic cat, robot cat. Columns:
-happy, okay, needy. Code: [pawpal_ai/pet_art.py](pawpal_ai/pet_art.py).
+![PawPal+ Companion app](assets/app_screenshot.png)
+
+The Companion tab opens first. With no pets it shows a welcome screen with a one-click **demo household**
+(or open `http://localhost:8501/?demo=1` to load it directly). Warm theme in
+[.streamlit/config.toml](.streamlit/config.toml), shared styles in [ui_theme.py](ui_theme.py).
+
+### The virtual pet (chibi art in a living scene)
+
+The companion is drawn as smooth chibi-style vector art (SVG + CSS animation, no image files) and placed in a
+scene ([pawpal_ai/scene.py](pawpal_ai/scene.py)): the *realistic* style lives in a garden whose sky follows
+your real time of day (morning, daytime, evening, night with stars and moon) with a fence, flowers, drifting
+clouds, a ball, and a food bowl that is full or empty depending on how fed the pet is; the *robotic* style
+lives in a neon lab with a city-skyline window, a grid floor, a glowing charging pad and a pellet dock.
+The pet's **mood** changes its face (happy, okay, sad with slanted brows), its **lowest need** shows in a
+thought bubble (🍖 hungry, 🧸 bored, 🛁 messy), and **logging care** plays a one-shot reaction (eating,
+hopping, sparkles, hearts). Rows: realistic dog, robot dog, realistic cat, robot cat. Columns: happy, okay,
+needy. Code: [pawpal_ai/pet_art.py](pawpal_ai/pet_art.py).
+
+![Companion gallery](assets/companion_gallery.png)
 
 **Synced to the real pet.** The companion is a mirror, not a separate game: each need (belly, fun, clean) is
 the *minimum* of the game's level and the real pet's level, computed from real care events only. So the
@@ -38,8 +50,6 @@ virtual pet cannot be happy unless the real pet is, however much you play with i
 bottleneck it tells you what the real pet needs. This is a tested property (`mood(shown) <= mood(real)` over
 300 random histories). Real needs drain slowly (fed within ~24 h, walked within ~36 h, groomed within a
 week); the game's needs drain in hours.
-
-![Companion gallery](assets/companion_gallery.png)
 
 ## Architecture overview
 
@@ -74,7 +84,7 @@ flowchart TD
     VET(["Veterinarian / poison hotline<br/>(human in the loop)"])
     OWNERCHECK(["Owner reviews, logs care<br/>(human in the loop)"])
     TRACE[("logs/agent_trace.jsonl<br/>logs/pawpal.log")]
-    EVAL["evaluate.py + pytest<br/>52 eval cases, 68 unit tests"]
+    EVAL["evaluate.py + pytest<br/>52 eval cases, 72 unit tests"]
 
     OWNER --> OBS
     EVENTS --> LOG --> OBS
@@ -130,7 +140,7 @@ says so instead of guessing.
 
 ```
 === INPUT 1: 07:10 briefing, realistic companion ===
-Woof! Good morning! Here's what your pets need today.
+Woof! Here's what your pets need today.
   07:10-07:15  Rex: Heartworm meds
       why: required, high priority
       tip: Give medication at the same time each day and set a reminder, because consistent timing keeps drug levels steady.  [medication.md > Giving medication on schedule]
@@ -149,7 +159,8 @@ Woof! Good morning! Here's what your pets need today.
   [nudge] Rex usually has feeding around 07:25. Almost time!
   [learning] I'm still learning Rex's grooming routine (1 so far). I'll start predicting after a few more days.
   [learning] I'm still learning Mia's enrichment routine (2 so far). I'll start predicting after a few more days.
-  Rex feels needy: belly 0%, fun 0%, fresh 0%.
+  Rex feels okay: belly 45%, fun 35%, fresh 59%.
+  I can't feel any better until the real Rex gets fed and walked or played with and groomed. Playing with me won't fix that!
 ```
 
 **Input 2: 09:40 the same day, robotic voice.** Breakfast was logged, the walk was not. The system
@@ -176,7 +187,8 @@ BOOT COMPLETE. Daily care briefing for Jordan's pets.
   [nudge] OVERDUE: walk not logged. Expected 07:49. Please execute.
   [learning] CALIBRATING: grooming sample size 1. Predictions disabled until enough data.
   [learning] CALIBRATING: enrichment sample size 2. Predictions disabled until enough data.
-  STATUS REX-UNIT: belly 0% | fun 0% | clean 0% | mood=needy
+  STATUS REX-UNIT: belly 65% | fun 28% | clean 57% | mood=okay
+  SYNC LIMIT: unit mood capped by real Rex care deficit (walked or played with and groomed). Simulated care cannot override.
 ```
 
 **Input 3: questions, covering RAG and guardrails.** Grapes and play-session questions are answered
@@ -233,7 +245,7 @@ TOTAL      50/52 passed (96%)
 
 | Check | Result |
 |---|---|
-| Unit tests (`pytest`) | **68 / 68 passed** |
+| Unit tests (`pytest`) | **72 / 72 passed** |
 | Eval: retrieval top-1 on labelled questions | **16 / 18** (12 written during development, 6 harder paraphrases written afterwards) |
 | Eval: routine learner (recovers true time, detects two meals, low confidence on thin or noisy data) | 5 / 5 |
 | Eval: guardrails (empty, oversize, emergency, off-topic, normal) | 9 / 9 |
@@ -291,7 +303,7 @@ pawpal_system.py            original PawPal+ core (Module 2)
 pawpal_ai/                  care_log, routine_learner, retriever, guardrails, companion, pet_art, agent, demo_data
 knowledge/                  RAG source documents (6 files, 17 sections)
 demo.py, evaluate.py        reproducible demo and evaluation harness
-tests/                      15 original + 53 new unit tests
+tests/                      15 original + 57 new unit tests
 diagrams/architecture.mmd   system diagram (Mermaid source); pawpal_original_uml.mmd is the Module 2 UML
 assets/                     captured run, eval results, sample agent trace
 ai_interactions.md          agent reasoning trace + AI-collaboration log

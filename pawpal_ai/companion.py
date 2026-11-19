@@ -91,6 +91,9 @@ class Companion:
         """Render one message kind in the active voice. Unknown kinds raise KeyError (a bug)."""
         return VOICES[self.style][kind].format(name=self.pet_name, **kw)
 
+    def mood_line(self, state: CompanionState) -> str:
+        return self.say(f"mood_{state.mood}")
+
     def sync_note(self, synced: SyncedState) -> str:
         """Empty when game play, not real care, is the limit."""
         names = {"belly": "fed", "fun": "walked or played with", "clean": "groomed"}
@@ -106,13 +109,16 @@ class Companion:
 
 VOICES = {
     "realistic": {
-        "greeting": "Woof! Good morning! Here's what your pets need today.",
+        "greeting": "Woof! Here's what your pets need today.",
         "upcoming": "{name} usually has {task} around {time}. Almost time!",
         "overdue": "{name} is waiting for {task}. It's normally around {time}, and it hasn't happened yet today.",
         "done": "Yay! {name} had {task} at {time}. Tail wags!",
         "learning": "I'm still learning {name}'s {task} routine ({n} so far). I'll start predicting after a few more days.",
         "all_done": "Everything on the list is done. Good human, {name}!",
         "no_answer": "I don't have a trustworthy answer in my notes about that. Your vet is the best person to ask.",
+        "mood_happy": "Best day ever! Tail wags for everyone!",
+        "mood_okay": "I'm doing alright. A little more love and I'll be bouncing!",
+        "mood_needy": "I'm feeling pretty low... please check on the real {name}.",
         "synced": "I can't feel any better until the real {name} gets {needs}. Playing with me won't fix that!",
     },
     "robotic": {
@@ -123,6 +129,9 @@ VOICES = {
         "learning": "CALIBRATING: {task} sample size {n}. Predictions disabled until enough data.",
         "all_done": "ALL TASKS CLOSED for {name}'s pets. Standing by.",
         "no_answer": "QUERY UNRESOLVED: no reliable entry in knowledge base. Consult veterinarian.",
+        "mood_happy": "ALL SYSTEMS OPTIMAL. Happiness at maximum.",
+        "mood_okay": "Systems nominal. Minor care deficits detected.",
+        "mood_needy": "WARNING: low power and low morale. Check real {name} now.",
         "synced": "SYNC LIMIT: unit mood capped by real {name} care deficit ({needs}). Simulated care cannot override.",
     },
 }

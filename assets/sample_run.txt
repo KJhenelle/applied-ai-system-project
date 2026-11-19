@@ -1,5 +1,5 @@
 === INPUT 1: 07:10 briefing, realistic companion ===
-Woof! Good morning! Here's what your pets need today.
+Woof! Here's what your pets need today.
   07:10-07:15  Rex: Heartworm meds
       why: required, high priority
       tip: Give medication at the same time each day and set a reminder, because consistent timing keeps drug levels steady.  [medication.md > Giving medication on schedule]
@@ -18,7 +18,8 @@ Woof! Good morning! Here's what your pets need today.
   [nudge] Rex usually has feeding around 07:25. Almost time!
   [learning] I'm still learning Rex's grooming routine (1 so far). I'll start predicting after a few more days.
   [learning] I'm still learning Mia's enrichment routine (2 so far). I'll start predicting after a few more days.
-  Rex feels needy: belly 0%, fun 0%, fresh 0%.
+  Rex feels okay: belly 45%, fun 35%, fresh 59%.
+  I can't feel any better until the real Rex gets fed and walked or played with and groomed. Playing with me won't fix that!
 
 === INPUT 2: same day 09:40, robotic companion; Rex's breakfast logged, walk missed ===
 BOOT COMPLETE. Daily care briefing for Jordan's pets.
@@ -38,7 +39,8 @@ BOOT COMPLETE. Daily care briefing for Jordan's pets.
   [nudge] OVERDUE: walk not logged. Expected 07:49. Please execute.
   [learning] CALIBRATING: grooming sample size 1. Predictions disabled until enough data.
   [learning] CALIBRATING: enrichment sample size 2. Predictions disabled until enough data.
-  STATUS REX-UNIT: belly 0% | fun 0% | clean 0% | mood=needy
+  STATUS REX-UNIT: belly 65% | fun 28% | clean 57% | mood=okay
+  SYNC LIMIT: unit mood capped by real Rex care deficit (walked or played with and groomed). Simulated care cannot override.
 
 === INPUT 3: questions (RAG + guardrails) ===
 Q: 'Can Rex eat grapes?'

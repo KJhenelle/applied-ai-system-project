@@ -18,8 +18,9 @@ def kb():
     return KnowledgeBase()
 
 
-def agent(kb, now=NOW, style="realistic"):
-    owner, avail, log = build_demo(now)
+def agent(kb, now=NOW, style="realistic", include_today=False):
+    # include_today=False: nothing has happened yet today, so overdue/planning tests are deterministic.
+    owner, avail, log = build_demo(now, include_today=include_today)
     return CareAgent(owner, avail, log, kb, style, trace_path=None), log
 
 
@@ -261,5 +262,33 @@ def test_ui_second_pet_selectable_without_error():
         sel.select(name).run()
         assert not at.exception, at.exception[0].message
     for style in ("robotic", "realistic"):
-        at.radio[0].set_value(style).run()
+        next(g for g in at.segmented_control if g.key == "companion_style").set_value(style).run()
         assert not at.exception
+
+
+def test_demo_household_includes_todays_progress_when_asked():
+    now = datetime(2026, 11, 18, 12, 0)
+    _, _, log = build_demo(now)
+    today_real = [e for e in log.query("Rex", REAL, since=datetime(2026, 11, 18)) if e.timestamp <= now]
+    assert {"walk", "feeding"} <= {e.task_type for e in today_real}
+    _, _, bare = build_demo(now, include_today=False)
+    assert not bare.query("Rex", REAL, since=datetime(2026, 11, 18))
+
+
+def test_empty_state_renders_without_error():
+    from streamlit.testing.v1 import AppTest
+    at = AppTest.from_file(str(__import__("pathlib").Path(__file__).resolve().parent.parent / "app.py"), default_timeout=30).run()
+    assert not at.exception and any("demo household" in b.label for b in at.button)
+
+
+def test_all_done_message_never_hides_alerts(kb):
+    owner, _, log = build_demo(NOW)
+    b = CareAgent(owner, [], log, kb, trace_path=None).run(NOW)  # meds cannot be scheduled
+    assert b.alerts and not b.all_done
+
+
+def test_scenes_are_valid_svg_for_every_time_of_day():
+    from pawpal_ai.scene import scene_svg
+    for style in ("realistic", "robotic"):
+        for hour in range(24):
+            ET.fromstring(scene_svg(style, hour, belly=hour * 4))

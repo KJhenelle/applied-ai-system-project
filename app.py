@@ -4,6 +4,7 @@ from html import escape
 import streamlit as st
 
 import companion_ui
+import ui_theme
 
 from pawpal_system import (
     Frequency,
@@ -16,7 +17,7 @@ from pawpal_system import (
     TimeSlot,
 )
 
-st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
+st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="wide")
 
 SPECIES_EMOJI = {"dog": "🐶", "cat": "🐱", "other": "🐾"}
 TYPE_EMOJI = {
@@ -28,39 +29,7 @@ TYPE_EMOJI = {
 }
 PRIORITY_COLOR = {Priority.HIGH: "#e5484d", Priority.MEDIUM: "#f5a524", Priority.LOW: "#30a46c"}
 
-st.markdown(
-    """
-<style>
-.block-container { padding-top: 2rem; max-width: 760px; }
-.hero {
-    background: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
-    color: white; padding: 1.6rem 1.8rem; border-radius: 18px; margin-bottom: 1.2rem;
-}
-.hero h1 { margin: 0; font-size: 2.2rem; color: white; }
-.hero p { margin: .3rem 0 0; opacity: .92; }
-.card {
-    border: 1px solid rgba(128,128,128,.25); border-radius: 14px;
-    padding: .8rem 1rem; margin-bottom: .6rem; background: rgba(128,128,128,.06);
-}
-.card .title { font-weight: 600; font-size: 1.02rem; }
-.card .meta { opacity: .75; font-size: .88rem; }
-.badge {
-    display: inline-block; padding: .08rem .55rem; border-radius: 999px;
-    font-size: .75rem; font-weight: 600; color: white; margin-left: .4rem;
-}
-.slot {
-    border-left: 5px solid #ff5e62; border-radius: 10px; padding: .7rem 1rem;
-    margin-bottom: .6rem; background: rgba(255,94,98,.07);
-}
-.slot .time { font-weight: 700; font-variant-numeric: tabular-nums; }
-.slot .why { opacity: .75; font-size: .86rem; }
-div[data-testid="stMetric"] {
-    background: rgba(128,128,128,.07); border-radius: 14px; padding: .6rem .9rem;
-}
-</style>
-""",
-    unsafe_allow_html=True,
-)
+st.markdown(ui_theme.CSS, unsafe_allow_html=True)
 
 # Streamlit reruns this script on every interaction, so anything that must survive
 # lives in st.session_state. Only create the objects the first time through.
@@ -80,20 +49,20 @@ def badge(priority: Priority) -> str:
 st.markdown(
     f"""
 <div class="hero">
-  <h1>🐾 PawPal+</h1>
-  <p>Hi {escape(owner.name or "there")}! Plan a happy, well-cared-for day for every pet.</p>
+  <h1>🐾 PawPal+ Companion</h1>
+  <p>Hi {escape(owner.name or "there")}! A virtual pet that mirrors your real pet's care, learns their routine, and plans the day.</p>
+  <div class="pills">
+    <span class="pill">🐾 {len(owner.pets)} pet{"s" if len(owner.pets) != 1 else ""}</span>
+    <span class="pill">📋 {len(all_tasks)} task{"s" if len(all_tasks) != 1 else ""}</span>
+    <span class="pill">⏰ {len(st.session_state.availability)} free window{"s" if len(st.session_state.availability) != 1 else ""}</span>
+  </div>
 </div>
 """,
     unsafe_allow_html=True,
 )
 
-m1, m2, m3 = st.columns(3)
-m1.metric("🐾 Pets", len(owner.pets))
-m2.metric("📋 Tasks", len(all_tasks))
-m3.metric("⏰ Free windows", len(st.session_state.availability))
-
-tab_pets, tab_tasks, tab_time, tab_plan, tab_companion = st.tabs(
-    ["🐕 Owner & Pets", "📋 Tasks", "⏰ Availability", "📅 Today's Plan", "🤖 Companion"]
+tab_companion, tab_pets, tab_tasks, tab_time, tab_plan = st.tabs(
+    ["🐾 Companion", "🐕 Pets", "📋 Tasks", "⏰ Availability", "📅 Today's Plan"]
 )
 
 # --- Owner & pets ----------------------------------------------------------
@@ -270,9 +239,9 @@ with tab_plan:
             st.markdown(
                 f"""
 <div class="slot">
-  <div class="time">{i.slot.start:%H:%M} – {i.slot.end:%H:%M}</div>
-  <div class="title">{TYPE_EMOJI[i.task.type]} {escape(i.pet.name)}: {escape(i.task.title)}</div>
-  <div class="why">Why: {escape(i.reason)}</div>
+  <div class="time">{i.slot.start:%H:%M}<br>{i.slot.end:%H:%M}</div>
+  <div><div class="title">{TYPE_EMOJI[i.task.type]} {escape(i.pet.name)}: {escape(i.task.title)}</div>
+  <div class="why">Why: {escape(i.reason)}</div></div>
 </div>""",
                 unsafe_allow_html=True,
             )

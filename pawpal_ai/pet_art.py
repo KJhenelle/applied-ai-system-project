@@ -11,6 +11,7 @@ Two art styles show the same state:
 from __future__ import annotations
 
 from .companion import CompanionState
+from .scene import period, scene_svg
 
 MOODS = ("happy", "okay", "needy")
 REACTIONS = {"feeding": "eat", "walk": "play", "enrichment": "play", "grooming": "groom", "meds": "heart"}
@@ -26,9 +27,14 @@ PALETTES = {
 LED = {"happy": "#3ddc84", "okay": "#ffc83d", "needy": "#ff5d5d"}
 
 CSS = """
-html,body{margin:0;background:transparent;font-family:system-ui,sans-serif}
-.stage{display:flex;justify-content:center;align-items:center;height:100%}
-svg{width:260px;height:260px;overflow:visible}
+html,body{margin:0;background:transparent;font-family:system-ui,sans-serif;height:100%}
+.stage{position:relative;height:100%;min-height:300px;border-radius:26px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.scene{position:absolute;inset:0;width:100%;height:100%}
+.pet{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);width:min(235px,60vw);height:auto;aspect-ratio:1;overflow:visible}
+.cloud{animation:drift 60s linear infinite}
+.chip{position:absolute;left:14px;top:12px;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:700;letter-spacing:.02em;background:rgba(255,255,255,.82);color:#4a3b45;backdrop-filter:blur(4px)}
+.robotic .chip{background:rgba(20,28,64,.7);color:#8cf0ff}
+@keyframes drift{from{transform:translateX(-40px)}50%{transform:translateX(40px)}to{transform:translateX(-40px)}}
 .bob{animation:bob 2.6s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
 .needy .bob{animation-duration:4.2s}
 .tail{transform-box:fill-box;transform-origin:0% 100%;animation:wag 0.5s ease-in-out infinite alternate}
@@ -227,8 +233,13 @@ def build_svg(species: str, style: str, mood: str, need: str | None = None, reac
             f'<ellipse cx="150" cy="278" rx="72" ry="9" fill="#000" opacity=".12"/>{body}{_bubble(need)}{_fx(reaction)}</svg>')
 
 
-def render_html(species: str, style: str, state: CompanionState, reaction: str | None = None) -> str:
-    """Full HTML snippet for st.components.v1.html (or saving to a file)."""
-    svg = build_svg(species, style, state.mood, lowest_need(state), reaction)
-    cls = f"{state.mood} react-{reaction}" if reaction else state.mood
-    return f"<style>{CSS}</style><div class='stage {cls}'>{svg}</div>"
+def render_html(species: str, style: str, state: CompanionState, reaction: str | None = None,
+                hour: int | None = None) -> str:
+    """Full HTML snippet (scene + pet) for st.iframe / components.html, or saving to a file."""
+    from datetime import datetime
+
+    hour = datetime.now().hour if hour is None else hour
+    svg = build_svg(species, style, state.mood, lowest_need(state), reaction).replace("<svg ", '<svg class="pet" ', 1)
+    cls = f"{style} {state.mood}" + (f" react-{reaction}" if reaction else "")
+    label = {"dawn": "Morning", "day": "Daytime", "sunset": "Evening", "night": "Night"}[period(hour)] if style == "realistic" else "Lab mode"
+    return f"<style>{CSS}</style><div class='stage {cls}'>{scene_svg(style, hour, state.belly)}<div class='chip'>{label}</div>{svg}</div>"

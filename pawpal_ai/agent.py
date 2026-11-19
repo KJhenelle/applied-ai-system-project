@@ -52,6 +52,7 @@ class Briefing:
     patterns: list[RoutinePattern] = field(default_factory=list)
     trace: list[dict] = field(default_factory=list)
     companion_status: str = ""
+    all_done: str = ""
 
 
 @dataclass
@@ -148,8 +149,8 @@ class CareAgent:
 
         # Nudges come last because they depend on the final state of the day.
         briefing.nudges = self._nudges(now, briefing.patterns, todays)
-        if not briefing.lines and not briefing.nudges:
-            briefing.nudges.append(Companion(self.owner.name, "dog", self.style).say("all_done"))
+        if not briefing.lines and not briefing.nudges and not briefing.alerts:
+            briefing.all_done = Companion(self.owner.name, "dog", self.style).say("all_done")
         first = self.owner.pets[0] if self.owner.pets else None
         if first:
             synced = compute_synced_state(self.care_log, first.name, now)
