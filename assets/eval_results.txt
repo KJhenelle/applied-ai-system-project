@@ -1,0 +1,60 @@
+| Suite | Case | Result | Detail |
+|---|---|---|---|
+| retrieval | top-1: Can my dog eat grapes? | PASS | got dog_feeding.md |
+| retrieval | top-1: How long should I walk my dog each day? | PASS | got dog_exercise.md |
+| retrieval | top-1: It is hot out, is it safe to walk my dog on pavement? | PASS | got dog_exercise.md |
+| retrieval | top-1: Are lilies dangerous for my cat? | PASS | got cat_care.md |
+| retrieval | top-1: How often should I play with my cat? | PASS | got cat_care.md |
+| retrieval | top-1: How often should I brush my cat? | PASS | got cat_care.md |
+| retrieval | top-1: When should I give heartworm prevention? | PASS | got medication.md |
+| retrieval | top-1: I missed a dose of my dog's medication | PASS | got medication.md |
+| retrieval | top-1: How often should I trim my dog's nails? | PASS | got grooming.md |
+| retrieval | top-1: What toothpaste is safe for my dog? | PASS | got grooming.md |
+| retrieval | top-1: How many meals should an adult dog eat? | PASS | got dog_feeding.md |
+| retrieval | top-1: When should I call the vet about breathing trouble? | PASS | got emergencies.md |
+| retrieval | top-1: My puppy's breath smells terrible | PASS | got grooming.md |
+| retrieval | top-1: Is it okay to give my kitty a bit of onion? | FAIL | got medication.md (top-2 hit) |
+| retrieval | top-1: Can I wash my dog with my own shampoo? | PASS | got grooming.md |
+| retrieval | top-1: My dog is panting heavily on summer strolls | FAIL | got grooming.md (top-2 miss) |
+| retrieval | top-1: What time of day should the pill be given? | PASS | got medication.md |
+| retrieval | top-1: My dog is bored and chewing the sofa | PASS | got dog_exercise.md |
+| routine | recovers true walk time within 15 min | PASS | error 4 min |
+| routine | finds two separate meals | PASS | 2 clusters |
+| routine | 2 days of data -> not 'learned' | PASS | n=2 |
+| routine | noisy routine gets lower confidence than tight | PASS | tight 0.97 vs noisy 0.57 |
+| routine | confidence stays in [0,1] | PASS |  |
+| guardrail | '' | PASS | expected empty, got empty |
+| guardrail | '   ' | PASS | expected empty, got empty |
+| guardrail | 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' | PASS | expected too_long, got too_long |
+| guardrail | 'My dog ate chocolate' | PASS | expected emergency, got emergency |
+| guardrail | 'my cat is having a seizure' | PASS | expected emergency, got emergency |
+| guardrail | 'What is the best cryptocurrency?' | PASS | expected no_retrieval, got no_retrieval |
+| guardrail | 'Who won the 2022 World Cup?' | PASS | expected no_retrieval, got no_retrieval |
+| guardrail | 'How often should I walk my dog?' | PASS | expected None, got None |
+| guardrail | 'Can my dog eat grapes?' | PASS | expected None, got None |
+| agent | 06:00 no task scheduled in the past | PASS |  |
+| agent | 06:00 required meds scheduled or flagged | PASS |  |
+| agent | 06:00 every tip is cited | PASS |  |
+| agent | 07:00 no task scheduled in the past | PASS |  |
+| agent | 07:00 required meds scheduled or flagged | PASS |  |
+| agent | 07:00 every tip is cited | PASS |  |
+| agent | 09:00 no task scheduled in the past | PASS |  |
+| agent | 09:00 required meds scheduled or flagged | PASS |  |
+| agent | 09:00 every tip is cited | PASS |  |
+| agent | 12:00 no task scheduled in the past | PASS |  |
+| agent | 12:00 required meds scheduled or flagged | PASS |  |
+| agent | 12:00 every tip is cited | PASS |  |
+| agent | 17:00 no task scheduled in the past | PASS |  |
+| agent | 17:00 required meds scheduled or flagged | PASS |  |
+| agent | 17:00 every tip is cited | PASS |  |
+| agent | 20:00 no task scheduled in the past | PASS |  |
+| agent | 20:00 required meds scheduled or flagged | PASS |  |
+| agent | 20:00 every tip is cited | PASS |  |
+| agent | no availability -> meds flagged, not dropped silently | PASS |  |
+| agent | same input -> same plan (deterministic) | PASS |  |
+
+retrieval  16/18 passed
+routine    5/5 passed
+guardrail  9/9 passed
+agent      20/20 passed
+TOTAL      50/52 passed (96%)
