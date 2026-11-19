@@ -199,3 +199,67 @@ def test_bubble_shows_the_lowest_need_only_when_low():
     assert lowest_need(CompanionState(90, 80, 70)) is None
     assert lowest_need(CompanionState(60, 10, 70)) == "fun"
     assert "🧸" in render_html("dog", "realistic", CompanionState(60, 10, 70))
+
+
+# ---- real/virtual sync
+import random
+
+from pawpal_ai.companion import compute_real_state, compute_synced_state
+
+RANK = {"needy": 0, "okay": 1, "happy": 2}
+
+
+def _log(real_hours_ago: dict, virtual_hours_ago: dict) -> CareLog:
+    ev = [CareEvent("Rex", k, NOW - timedelta(hours=h), REAL) for k, h in real_hours_ago.items()]
+    ev += [CareEvent("Rex", k, NOW - timedelta(hours=h), VIRTUAL) for k, h in virtual_hours_ago.items()]
+    return CareLog(ev)
+
+
+def test_virtual_cannot_be_happy_if_real_pet_is_neglected():
+    # Lots of game play, zero real care.
+    log = _log({}, {"feeding": 0, "walk": 0, "grooming": 0})
+    s = compute_synced_state(log, "Rex", NOW)
+    assert s.virtual.mood == "happy" and s.real.mood == "needy"
+    assert s.shown.mood == "needy" and set(s.limited_by) == {"belly", "fun", "clean"}
+
+
+def test_real_care_unlocks_the_companion():
+    log = _log({"feeding": 1, "walk": 1, "grooming": 24}, {"feeding": 0, "walk": 0, "grooming": 0})
+    s = compute_synced_state(log, "Rex", NOW)
+    assert s.shown.mood == "happy" and s.limited_by == ()
+
+
+def test_real_care_alone_is_not_enough_if_nobody_plays_with_the_toy():
+    log = _log({"feeding": 1, "walk": 1, "grooming": 1}, {})
+    s = compute_synced_state(log, "Rex", NOW)
+    assert s.real.mood == "happy" and s.shown.mood == "needy"
+
+
+def test_property_companion_mood_never_exceeds_real_mood():
+    rng = random.Random(3)
+    for _ in range(300):
+        real = {k: rng.uniform(0, 200) for k in ("feeding", "walk", "grooming") if rng.random() < .7}
+        virt = {k: rng.uniform(0, 80) for k in ("feeding", "walk", "grooming") if rng.random() < .7}
+        s = compute_synced_state(_log(real, virt), "Rex", NOW)
+        assert RANK[s.shown.mood] <= RANK[s.real.mood]
+        assert all(getattr(s.shown, n) <= getattr(s.real, n) for n in ("belly", "fun", "clean"))
+
+
+def test_sync_note_names_the_real_bottleneck_in_both_voices():
+    s = compute_synced_state(_log({}, {"feeding": 0}), "Rex", NOW)
+    assert "fed" in Companion("Rex", "dog", "realistic").sync_note(s)
+    assert "SYNC LIMIT" in Companion("Rex", "dog", "robotic").sync_note(s)
+
+
+# ---- UI regression: choosing the second pet used to raise StreamlitDuplicateElementId
+def test_ui_second_pet_selectable_without_error():
+    from streamlit.testing.v1 import AppTest
+    at = AppTest.from_file(str(__import__("pathlib").Path(__file__).resolve().parent.parent / "app.py"), default_timeout=30).run()
+    next(b for b in at.button if "demo household" in b.label).click().run()
+    sel = next(s for s in at.selectbox if s.label == "Companion for")
+    for name in ("Mia", "Rex", "Mia"):
+        sel.select(name).run()
+        assert not at.exception, at.exception[0].message
+    for style in ("robotic", "realistic"):
+        at.radio[0].set_value(style).run()
+        assert not at.exception

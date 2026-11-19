@@ -7,7 +7,8 @@ from datetime import datetime
 from pathlib import Path
 
 from pawpal_ai.agent import Briefing, CareAgent
-from pawpal_ai.care_log import REAL, CareEvent
+from pawpal_ai.care_log import REAL, VIRTUAL, CareEvent
+from pawpal_ai.companion import Companion, compute_synced_state
 from pawpal_ai.demo_data import build_demo
 
 NOW = datetime(2026, 11, 18, 7, 10)
@@ -56,6 +57,29 @@ def main() -> None:
         print(f"Q: {q!r}")
         print(f"A: {a.text}")
         print(f"   sources={a.sources} refused={a.refused} reason={a.reason or '-'}")
+
+    print("\n=== INPUT 4: real/virtual sync (companion can't be happier than the real pet) ===")
+    sync_demo(care_log)
+
+
+def show_sync(care_log, when, label) -> None:
+    synced = compute_synced_state(care_log, "Rex", when)
+    voice = Companion("Rex", "dog", "robotic")
+    f = lambda c: f"belly {c.belly:>3}% fun {c.fun:>3}% clean {c.clean:>3}% -> {c.mood}"
+    print(f"[{label}]")
+    print(f"  game-only companion : {f(synced.virtual)}")
+    print(f"  real Rex            : {f(synced.real)}")
+    print(f"  SHOWN companion     : {f(synced.shown)}")
+    print(f"  {voice.sync_note(synced) or '(no real-care limit)'}")
+
+
+def sync_demo(care_log) -> None:
+    when = datetime(2026, 11, 18, 9, 40)
+    for kind in ("feeding", "walk", "grooming"):  # plenty of game play, no real walk or grooming
+        care_log.record(CareEvent("Rex", kind, when, VIRTUAL))
+    show_sync(care_log, when, "09:40 lots of virtual play, Rex not walked yet")
+    care_log.record(CareEvent("Rex", "walk", datetime(2026, 11, 18, 9, 45), REAL))
+    show_sync(care_log, datetime(2026, 11, 18, 9, 46), "09:46 after a REAL walk is logged")
 
 
 if __name__ == "__main__":

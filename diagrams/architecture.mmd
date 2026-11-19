@@ -26,7 +26,7 @@ flowchart TD
     VET(["Veterinarian / poison hotline<br/>(human in the loop)"])
     OWNERCHECK(["Owner reviews, logs care<br/>(human in the loop)"])
     TRACE[("logs/agent_trace.jsonl<br/>logs/pawpal.log")]
-    EVAL["evaluate.py + pytest<br/>52 eval cases, 62 unit tests"]
+    EVAL["evaluate.py + pytest<br/>52 eval cases, 68 unit tests"]
 
     OWNER --> OBS
     EVENTS --> LOG --> OBS
@@ -36,6 +36,7 @@ flowchart TD
     QUESTION --> GUARD
     GUARD -- "ok" --> ASK
     GUARD -- "emergency" --> VET
+    LOG -- "real care caps mood" --> COMP
     CHECK -- "drop uncited tip / raise alert" --> COMP --> OUT --> OWNERCHECK
     ASK --> OWNERCHECK
     OWNERCHECK -- "logs what was done" --> EVENTS

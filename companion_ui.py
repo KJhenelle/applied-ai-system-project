@@ -10,7 +10,7 @@ import streamlit.components.v1 as components
 
 from pawpal_ai.agent import CareAgent
 from pawpal_ai.care_log import REAL, VIRTUAL, VALID_TYPES, CareEvent, CareLog
-from pawpal_ai.companion import STYLES, Companion, compute_state
+from pawpal_ai.companion import STYLES, Companion, compute_synced_state
 from pawpal_ai.demo_data import build_demo
 from pawpal_ai.pet_art import REACTIONS, render_html
 from pawpal_ai.retriever import KnowledgeBase
@@ -50,22 +50,29 @@ def render(owner, availability) -> None:
         return
 
     c1, c2 = st.columns(2)
-    pet = next(p for p in owner.pets if p.name == c1.selectbox("Companion for", [p.name for p in owner.pets]))
+    # Create the widget once. Building it inside the generator below re-created it for every pet
+    # until a match was found, which raised StreamlitDuplicateElementId when a later pet was chosen.
+    pet_name = c1.selectbox("Companion for", [p.name for p in owner.pets], key="companion_pet")
+    pet = next(p for p in owner.pets if p.name == pet_name)
     style = c2.radio("Companion style", STYLES, horizontal=True,
                      format_func=lambda s: "🐶 Realistic" if s == "realistic" else "🤖 Robotic")
     now = datetime.now()
     companion = Companion(pet.name, pet.species, style)
-    state = compute_state(care_log, pet.name, now)
+    synced = compute_synced_state(care_log, pet.name, now)
+    state = synced.shown  # the companion mirrors the real pet: it is capped by real care
 
     st.markdown(f"### {escape(pet.name)}")
     # One-shot reaction animation after the owner logs care (consumed so it doesn't replay).
     reaction = st.session_state.pop("reaction", None)
     _show_html(render_html(pet.species, style, state, reaction), 290)
     st.caption(companion.describe_state(state))
+    note = companion.sync_note(synced)
+    if note:
+        st.warning(f"🔗 {note}")
     m = st.columns(3)
-    m[0].metric("Belly", f"{state.belly}%")
-    m[1].metric("Fun", f"{state.fun}%")
-    m[2].metric("Clean", f"{state.clean}%")
+    for col, need, label in zip(m, ("belly", "fun", "clean"), ("Belly", "Fun", "Clean")):
+        shown, real = getattr(state, need), getattr(synced.real, need)
+        col.metric(label, f"{shown}%", delta=f"real {pet.name}: {real}%", delta_color="off")
     st.progress(min(100, (state.belly + state.fun + state.clean) // 3) / 100, text=f"Mood: {state.mood}")
 
     st.markdown("#### Log care")

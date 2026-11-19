@@ -30,6 +30,7 @@ diagnosis, dosing, or emergencies.
 - **Assumes a single, attentive owner who logs honestly.** The system only learns what gets logged. If an
   owner forgets to log a walk, the system will nag about a walk that happened; if two family members both
   care for the pet, patterns blur.
+- **The sync is a proxy for wellbeing, not a measurement of it.** "Happy" means "fed, walked and groomed recently according to what was logged". It cannot see illness, pain or a pet that was fed but is anxious, and an owner who forgets to log care makes the companion look needy about a well-cared-for animal. The drain times (24 h / 36 h / 1 week) are my assumptions, not veterinary guidance.
 - **Cultural/lifestyle bias in the defaults:** the quiet hours (22:00-05:00), the "morning walk" framing and
   the US poison-control number assume a US-style daytime schedule and location.
 
@@ -57,6 +58,7 @@ diagnosis, dosing, or emergencies.
 - **The demo found bugs the unit tests did not.** The first briefing scheduled meds at 07:00 in a 07:10
   briefing, and Dinner was assigned the *morning* routine once breakfast had been logged. Both were logic
   errors in how pieces fit together, not in any single function.
+- **A UI bug that only appeared for the second pet.** Selecting Mia crashed the Companion tab (`StreamlitDuplicateElementId`): the pet selector was created inside a generator expression, so choosing any pet but the first built the widget twice. My smoke tests had only ever used the first pet. The fix is a keyed widget plus a regression test that selects every pet and style.
 - **The harder eval cases were more informative than the easy ones.** My first 12 retrieval cases passed
   12/12, which mostly proved I had tuned to them. Writing 6 paraphrases afterwards gave the honest number
   (16/18) and the actual failure mode (synonyms).

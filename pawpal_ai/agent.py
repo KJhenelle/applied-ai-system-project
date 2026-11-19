@@ -17,7 +17,7 @@ from pawpal_system import DailyPlan, Owner, Scheduler, Task, TimeSlot
 
 from . import guardrails
 from .care_log import REAL, CareLog
-from .companion import Companion, compute_state
+from .companion import Companion, compute_synced_state
 from .retriever import KnowledgeBase, tokenize
 from .routine_learner import RoutinePattern, learn_routine, reliable
 
@@ -152,8 +152,12 @@ class CareAgent:
             briefing.nudges.append(Companion(self.owner.name, "dog", self.style).say("all_done"))
         first = self.owner.pets[0] if self.owner.pets else None
         if first:
-            state = compute_state(self.care_log, first.name, now)
-            briefing.companion_status = Companion(first.name, first.species, self.style).describe_state(state)
+            synced = compute_synced_state(self.care_log, first.name, now)
+            voice = Companion(first.name, first.species, self.style)
+            briefing.companion_status = voice.describe_state(synced.shown)
+            note = voice.sync_note(synced)
+            if note:
+                briefing.companion_status += "\n  " + note
         self._write_trace(day, trace)
         return briefing
 

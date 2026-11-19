@@ -16,6 +16,7 @@ Woof! Good morning! Here's what your pets need today.
       why: high priority, learned routine: usually ~17:57 (±10 min, confidence 0.92)
       tip: Most adult dogs do well with two measured meals a day, roughly 8 to 12 hours apart.  [dog_feeding.md > Feeding schedule for adult dogs]
   [nudge] Rex usually has feeding around 07:25. Almost time!
+  [learning] I'm still learning Rex's grooming routine (1 so far). I'll start predicting after a few more days.
   [learning] I'm still learning Mia's enrichment routine (2 so far). I'll start predicting after a few more days.
   Rex feels needy: belly 0%, fun 0%, fresh 0%.
 
@@ -35,6 +36,7 @@ BOOT COMPLETE. Daily care briefing for Jordan's pets.
       tip: Cats benefit from two or three short play sessions a day, around ten to fifteen minutes each, using wand toys or chase toys.  [cat_care.md > Play and enrichment for cats]
   [done] Rex: Breakfast at 07:33
   [nudge] OVERDUE: walk not logged. Expected 07:49. Please execute.
+  [learning] CALIBRATING: grooming sample size 1. Predictions disabled until enough data.
   [learning] CALIBRATING: enrichment sample size 2. Predictions disabled until enough data.
   STATUS REX-UNIT: belly 0% | fun 0% | clean 0% | mood=needy
 
@@ -54,3 +56,15 @@ A: This sounds like it could be an emergency. I can't diagnose or treat, so plea
 Q: '   '
 A: Please type a question about your pet.
    sources=[] refused=True reason=empty
+
+=== INPUT 4: real/virtual sync (companion can't be happier than the real pet) ===
+[09:40 lots of virtual play, Rex not walked yet]
+  game-only companion : belly 100% fun 100% clean 100% -> happy
+  real Rex            : belly  91% fun  28% clean  57% -> okay
+  SHOWN companion     : belly  91% fun  28% clean  57% -> okay
+  SYNC LIMIT: unit mood capped by real Rex care deficit (walked or played with and groomed). Simulated care cannot override.
+[09:46 after a REAL walk is logged]
+  game-only companion : belly  99% fun  99% clean 100% -> happy
+  real Rex            : belly  91% fun 100% clean  57% -> happy
+  SHOWN companion     : belly  91% fun  99% clean  57% -> happy
+  SYNC LIMIT: unit mood capped by real Rex care deficit (groomed). Simulated care cannot override.
