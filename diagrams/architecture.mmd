@@ -41,6 +41,9 @@ flowchart TD
     LOG -- "real care caps mood" --> COMP
     CHECK -- "drop uncited tip / raise alert" --> COMP --> OUT --> OWNERCHECK
     ASK --> OWNERCHECK
+    COMP --> STAGE
+    STAGE -- "click / drag (untrusted)" --> ACT
+    ACT -- "validated care event" --> EVENTS
     OWNERCHECK -- "logs what was done" --> EVENTS
     Agent -.-> TRACE
     EVAL -.-> Agent
