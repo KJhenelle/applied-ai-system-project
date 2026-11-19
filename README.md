@@ -326,6 +326,20 @@ learner but the checks around it, and an evaluation set that kept catching my ow
 something else. The full responsible-AI reflection (limitations, misuse, AI collaboration) is in
 [model_card.md](model_card.md).
 
+## Portfolio reflection
+
+**What this project says about me as an AI engineer.** I take a working prototype and turn it into a system
+I can defend. I extended a rule-based pet scheduler into one that learns each pet's real routine, retrieves
+cited care guidance, and checks its own output before the owner sees it. I design for doubt: the system
+reports confidence, says "still learning" or "I don't know" instead of guessing, routes emergencies to a vet,
+and treats input from the browser as untrusted. I also distrust my own results. When my first evaluation
+passed 46 of 46, I wrote harder cases, kept the two real failures, and documented them instead of tuning them
+away. And I care about the human side of the product: the virtual pet is deliberately capped by how well the
+*real* animal is cared for, so a game can never hide a missed meal. I build with AI tools as a collaborator,
+directing the design, running the system myself, and verifying every claim against real output.
+
+GitHub: https://github.com/KJhenelle/applied-ai-system-project
+
 ## Repo map
 
 ```
