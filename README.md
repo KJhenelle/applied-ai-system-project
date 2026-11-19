@@ -19,7 +19,7 @@ questions using a **cited knowledge base**. It runs fully offline with no API ke
 | **Agentic workflow** | [pawpal_ai/agent.py](pawpal_ai/agent.py) | observe, learn, plan, retrieve, check, with a saved reasoning trace |
 | **RAG** | [pawpal_ai/retriever.py](pawpal_ai/retriever.py), [knowledge/](knowledge/) | each task gets a cited tip; Q&A answers *only* from retrieved text, or says it doesn't know |
 | **Learning from history** | [pawpal_ai/routine_learner.py](pawpal_ai/routine_learner.py) | learned times become scheduling hints, so the plan differs from the original scheduler's |
-| **Reliability + guardrails** | [pawpal_ai/guardrails.py](pawpal_ai/guardrails.py), [evaluate.py](evaluate.py), [tests/](tests/) | emergency routing, input limits, output checks, 90 unit tests, 60-case eval harness |
+| **Reliability + guardrails** | [pawpal_ai/guardrails.py](pawpal_ai/guardrails.py), [evaluate.py](evaluate.py), [tests/](tests/) | emergency routing, input limits, output checks, 91 unit tests, 60-case eval harness |
 | **Specialized voice** | [pawpal_ai/companion.py](pawpal_ai/companion.py) | two personas render the same facts; the virtual pet's needs drain without care |
 
 ## The app
@@ -110,7 +110,7 @@ flowchart TD
     ACT["actions.py validates browser input<br/>(untrusted), then records the event"]
     OWNERCHECK(["Owner reviews, logs care<br/>(human in the loop)"])
     TRACE[("logs/agent_trace.jsonl<br/>logs/pawpal.log")]
-    EVAL["evaluate.py + pytest<br/>60 eval cases, 90 unit tests"]
+    EVAL["evaluate.py + pytest<br/>60 eval cases, 91 unit tests"]
 
     OWNER --> OBS
     EVENTS --> LOG --> OBS
@@ -275,7 +275,7 @@ TOTAL      50/52 passed (96%)
 
 | Check | Result |
 |---|---|
-| Unit tests (`pytest`) | **90 / 90 passed** |
+| Unit tests (`pytest`) | **91 / 91 passed** |
 | Eval: retrieval top-1 on labelled questions | **16 / 18** (12 written during development, 6 harder paraphrases written afterwards) |
 | Eval: routine learner (recovers true time, detects two meals, low confidence on thin or noisy data) | 5 / 5 |
 | Eval: guardrails (empty, oversize, emergency, off-topic, normal) | 9 / 9 |
@@ -350,7 +350,7 @@ pawpal_system.py            original PawPal+ core (Module 2)
 pawpal_ai/                  care_log, routine_learner, retriever, guardrails, companion, pet_art, scene, props, actions, agent, demo_data
 knowledge/                  RAG source documents (6 files, 17 sections)
 demo.py, evaluate.py        reproducible demo and evaluation harness
-tests/                      15 original + 75 new unit tests
+tests/                      15 original + 76 new unit tests
 diagrams/architecture.mmd   system diagram (Mermaid source); pawpal_original_uml.mmd is the Module 2 UML
 assets/                     captured run, eval results, sample agent trace
 ai_interactions.md          agent reasoning trace + AI-collaboration log

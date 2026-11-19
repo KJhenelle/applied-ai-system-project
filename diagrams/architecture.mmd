@@ -28,7 +28,7 @@ flowchart TD
     ACT["actions.py validates browser input<br/>(untrusted), then records the event"]
     OWNERCHECK(["Owner reviews, logs care<br/>(human in the loop)"])
     TRACE[("logs/agent_trace.jsonl<br/>logs/pawpal.log")]
-    EVAL["evaluate.py + pytest<br/>60 eval cases, 90 unit tests"]
+    EVAL["evaluate.py + pytest<br/>60 eval cases, 91 unit tests"]
 
     OWNER --> OBS
     EVENTS --> LOG --> OBS
