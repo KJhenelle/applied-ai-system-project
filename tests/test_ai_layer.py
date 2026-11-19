@@ -252,10 +252,20 @@ def test_sync_note_names_the_real_bottleneck_in_both_voices():
     assert "SYNC LIMIT" in Companion("Rex", "dog", "robotic").sync_note(s)
 
 
+def _fresh_app_test():
+    """AppTest starts each run with an empty component registry, so re-import the stage module
+    (otherwise its one-time registration is skipped on the second AppTest in a process)."""
+    import sys
+    from pathlib import Path
+    from streamlit.testing.v1 import AppTest
+    for mod in ("stage", "companion_ui"):
+        sys.modules.pop(mod, None)
+    return AppTest.from_file(str(Path(__file__).resolve().parent.parent / "app.py"), default_timeout=30)
+
+
 # ---- UI regression: choosing the second pet used to raise StreamlitDuplicateElementId
 def test_ui_second_pet_selectable_without_error():
-    from streamlit.testing.v1 import AppTest
-    at = AppTest.from_file(str(__import__("pathlib").Path(__file__).resolve().parent.parent / "app.py"), default_timeout=30).run()
+    at = _fresh_app_test().run()
     next(b for b in at.button if "demo household" in b.label).click().run()
     sel = next(s for s in at.selectbox if s.label == "Companion for")
     for name in ("Mia", "Rex", "Mia"):
@@ -276,8 +286,7 @@ def test_demo_household_includes_todays_progress_when_asked():
 
 
 def test_empty_state_renders_without_error():
-    from streamlit.testing.v1 import AppTest
-    at = AppTest.from_file(str(__import__("pathlib").Path(__file__).resolve().parent.parent / "app.py"), default_timeout=30).run()
+    at = _fresh_app_test().run()
     assert not at.exception and any("demo household" in b.label for b in at.button)
 
 
@@ -349,3 +358,21 @@ def test_stage_payload_is_complete_and_valid():
     assert {"scene", "pet", "props", "style", "mood", "chip", "name", "mode"} <= set(p)
     ET.fromstring(p["scene"]); ET.fromstring(p["pet"])
     assert p["mood"] == "needy" and p["chip"] == "Lab mode" and 'class="pet"' in p["pet"]
+
+
+def test_ui_works_with_many_pets():
+    """The Mia bug: choosing any pet but the first crashed. Check a household of six, every pet, both styles."""
+    from pawpal_system import Owner, Pet
+    owner = Owner("Jordan", "")
+    for i, (name, sp) in enumerate([("Rex", "dog"), ("Mia", "cat"), ("Bo", "dog"), ("Luna", "cat"), ("Kiwi", "other"), ("Max", "dog")]):
+        owner.add_pet(Pet(name, sp, i + 1))
+    at = _fresh_app_test()
+    at.session_state["owner"] = owner
+    at.run()
+    sel = next(s for s in at.selectbox if s.label == "Companion for")
+    for name in ["Mia", "Bo", "Luna", "Kiwi", "Max", "Rex"]:
+        sel.select(name).run()
+        assert not at.exception, f"{name}: {at.exception[0].message}"
+    for style in ("robotic", "realistic"):
+        next(g for g in at.segmented_control if g.key == "companion_style").set_value(style).run()
+        assert not at.exception
