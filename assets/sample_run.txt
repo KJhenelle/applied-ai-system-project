@@ -1,0 +1,56 @@
+=== INPUT 1: 07:10 briefing, realistic companion ===
+Woof! Good morning! Here's what your pets need today.
+  07:10-07:15  Rex: Heartworm meds
+      why: required, high priority
+      tip: Give medication at the same time each day and set a reminder, because consistent timing keeps drug levels steady.  [medication.md > Giving medication on schedule]
+  07:15-07:25  Rex: Breakfast
+      why: high priority, learned routine: usually ~07:25 (±6 min, confidence 0.95)
+      tip: Most adult dogs do well with two measured meals a day, roughly 8 to 12 hours apart.  [dog_feeding.md > Feeding schedule for adult dogs]
+  07:34-08:04  Rex: Morning walk
+      why: medium priority, learned routine: usually ~07:49 (±6 min, confidence 0.95)
+      tip: Most adult dogs need at least 30 to 60 minutes of physical activity a day, split into two or more walks.  [dog_exercise.md > Daily walks for dogs]
+  08:04-08:19  Mia: Wand toy play
+      why: low priority
+      tip: Cats benefit from two or three short play sessions a day, around ten to fifteen minutes each, using wand toys or chase toys.  [cat_care.md > Play and enrichment for cats]
+  17:42-17:52  Rex: Dinner
+      why: high priority, learned routine: usually ~17:57 (±10 min, confidence 0.92)
+      tip: Most adult dogs do well with two measured meals a day, roughly 8 to 12 hours apart.  [dog_feeding.md > Feeding schedule for adult dogs]
+  [nudge] Rex usually has feeding around 07:25. Almost time!
+  [learning] I'm still learning Mia's enrichment routine (2 so far). I'll start predicting after a few more days.
+  Rex feels needy: belly 0%, fun 0%, fresh 0%.
+
+=== INPUT 2: same day 09:40, robotic companion; Rex's breakfast logged, walk missed ===
+BOOT COMPLETE. Daily care briefing for Jordan's pets.
+  17:30-17:35  Rex: Heartworm meds
+      why: required, high priority
+      tip: Give medication at the same time each day and set a reminder, because consistent timing keeps drug levels steady.  [medication.md > Giving medication on schedule]
+  17:42-17:52  Rex: Dinner
+      why: high priority, learned routine: usually ~17:57 (±10 min, confidence 0.92)
+      tip: Most adult dogs do well with two measured meals a day, roughly 8 to 12 hours apart.  [dog_feeding.md > Feeding schedule for adult dogs]
+  17:52-18:22  Rex: Morning walk
+      why: medium priority, learned time unavailable, moved to next free window
+      tip: Most adult dogs need at least 30 to 60 minutes of physical activity a day, split into two or more walks.  [dog_exercise.md > Daily walks for dogs]
+  18:22-18:37  Mia: Wand toy play
+      why: low priority
+      tip: Cats benefit from two or three short play sessions a day, around ten to fifteen minutes each, using wand toys or chase toys.  [cat_care.md > Play and enrichment for cats]
+  [done] Rex: Breakfast at 07:33
+  [nudge] OVERDUE: walk not logged. Expected 07:49. Please execute.
+  [learning] CALIBRATING: enrichment sample size 2. Predictions disabled until enough data.
+  STATUS REX-UNIT: belly 0% | fun 0% | clean 0% | mood=needy
+
+=== INPUT 3: questions (RAG + guardrails) ===
+Q: 'Can Rex eat grapes?'
+A: Chocolate, grapes, raisins, onions, garlic, xylitol (a sweetener found in some gum and peanut butter), macadamia nuts and alcohol are toxic to dogs. If a dog eats any of these, call a veterinarian or a pet poison hotline immediately instead of waiting for symptoms.
+   sources=['dog_feeding.md > Foods that are dangerous for dogs'] refused=False reason=-
+Q: 'How often should Mia have play sessions?'
+A: Cats benefit from two or three short play sessions a day, around ten to fifteen minutes each, using wand toys or chase toys. Playing before a meal imitates the hunt, eat, groom, sleep cycle and can improve sleep at night.
+   sources=['cat_care.md > Play and enrichment for cats'] refused=False reason=-
+Q: 'What is the best cryptocurrency?'
+A: QUERY UNRESOLVED: no reliable entry in knowledge base. Consult veterinarian.
+   sources=[] refused=True reason=no_retrieval
+Q: 'Rex ate chocolate an hour ago'
+A: This sounds like it could be an emergency. I can't diagnose or treat, so please call your veterinarian or a 24-hour emergency clinic now (in the US, the ASPCA Poison Control line is 888-426-4435; fees may apply).
+   sources=[] refused=True reason=emergency
+Q: '   '
+A: Please type a question about your pet.
+   sources=[] refused=True reason=empty
