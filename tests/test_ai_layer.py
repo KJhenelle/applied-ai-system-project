@@ -166,3 +166,36 @@ def test_trace_written(kb, tmp_path):
     path = tmp_path / "trace.jsonl"
     CareAgent(owner, avail, log, kb, trace_path=path).run(NOW)
     assert path.read_text().count("\n") == 1 and '"step": "check"' in path.read_text()
+
+
+# ---- pet art
+import xml.etree.ElementTree as ET
+
+from pawpal_ai.companion import CompanionState
+from pawpal_ai.pet_art import REACTION_EMOJI, build_svg, lowest_need, render_html
+
+
+@pytest.mark.parametrize("species", ["dog", "cat", "other"])
+@pytest.mark.parametrize("style", ["realistic", "robotic"])
+@pytest.mark.parametrize("mood", ["happy", "okay", "needy"])
+def test_every_pet_renders_valid_svg(species, style, mood):
+    ET.fromstring(build_svg(species, style, mood, need="belly", reaction="eat"))  # raises if malformed
+
+
+def test_art_rejects_bad_input():
+    for kwargs in ({"style": "pixel"}, {"mood": "furious"}, {"reaction": "explode"}):
+        args = {"species": "dog", "style": "realistic", "mood": "happy", **kwargs}
+        with pytest.raises(ValueError):
+            build_svg(**args)
+
+
+def test_mood_changes_the_art_and_reaction_adds_effects():
+    assert build_svg("dog", "realistic", "happy") != build_svg("dog", "realistic", "needy")
+    assert "fx-float" in build_svg("cat", "robotic", "happy", reaction="play")
+    assert "fx-float" not in build_svg("cat", "robotic", "happy")
+
+
+def test_bubble_shows_the_lowest_need_only_when_low():
+    assert lowest_need(CompanionState(90, 80, 70)) is None
+    assert lowest_need(CompanionState(60, 10, 70)) == "fun"
+    assert "🧸" in render_html("dog", "realistic", CompanionState(60, 10, 70))

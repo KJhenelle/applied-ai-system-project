@@ -6,11 +6,13 @@ from html import escape
 from pathlib import Path
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 from pawpal_ai.agent import CareAgent
 from pawpal_ai.care_log import REAL, VIRTUAL, VALID_TYPES, CareEvent, CareLog
 from pawpal_ai.companion import STYLES, Companion, compute_state
 from pawpal_ai.demo_data import build_demo
+from pawpal_ai.pet_art import REACTIONS, render_html
 from pawpal_ai.retriever import KnowledgeBase
 
 LOG_PATH = Path("data/care_log.json")
@@ -19,6 +21,14 @@ LOG_PATH = Path("data/care_log.json")
 @st.cache_resource
 def _kb() -> KnowledgeBase:
     return KnowledgeBase()
+
+
+def _show_html(html: str, height: int) -> None:
+    """Embed generated HTML. Only enum-validated values go into it, never user text."""
+    if hasattr(st, "iframe"):  # newer Streamlit; components.v1.html is deprecated there
+        st.iframe(html, height=height)
+    else:
+        components.html(html, height=height)
 
 
 def _ensure_log() -> CareLog:
@@ -47,7 +57,10 @@ def render(owner, availability) -> None:
     companion = Companion(pet.name, pet.species, style)
     state = compute_state(care_log, pet.name, now)
 
-    st.markdown(f"### {companion.avatar} {escape(pet.name)}")
+    st.markdown(f"### {escape(pet.name)}")
+    # One-shot reaction animation after the owner logs care (consumed so it doesn't replay).
+    reaction = st.session_state.pop("reaction", None)
+    _show_html(render_html(pet.species, style, state, reaction), 290)
     st.caption(companion.describe_state(state))
     m = st.columns(3)
     m[0].metric("Belly", f"{state.belly}%")
@@ -64,6 +77,7 @@ def render(owner, availability) -> None:
             source = REAL if st.session_state.get("log_source", REAL) == REAL else VIRTUAL
             care_log.record(CareEvent(pet.name, kind, datetime.now().replace(second=0, microsecond=0), source))
             care_log.save(LOG_PATH)
+            st.session_state.reaction = REACTIONS[kind]
             st.rerun()
     st.radio("Logging as", [REAL, VIRTUAL], key="log_source", horizontal=True,
              format_func=lambda s: "🐕 Real pet" if s == REAL else "🎮 Virtual companion")
